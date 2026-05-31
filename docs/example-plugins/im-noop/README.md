@@ -7,11 +7,10 @@ IM plugins currently use the `ImSettingsManifest` protocol; Phase 2 will unify i
 ## Develop
 
 ```bash
-cd monorepo
 pnpm install
 pnpm --filter __PACKAGE_NAME__ build
 ```
 
-After build, the plugin auto-registers (the IM loader scans `monorepo/plugins/im-*/dist/index.js`) — drop it under `monorepo/plugins/im-<slug>/` and run `pnpm dev`.
+After build, the plugin auto-registers (the IM loader scans `plugins/im-*/dist/index.js`) — drop it under `plugins/im-<slug>/` and run `pnpm dev`.
 
 See [`.agent/plugin-authoring-guide.md`](../../../../.agent/plugin-authoring-guide.md) for the full plugin authoring guide.

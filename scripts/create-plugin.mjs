@@ -112,7 +112,7 @@ copyRecursive(templateDir, targetDir);
 
 process.stdout.write(`\nGenerated ${targetDir}\n\n`);
 process.stdout.write(`Next steps:\n`);
-process.stdout.write(`  1. cd monorepo && pnpm install\n`);
+process.stdout.write(`  1. pnpm install\n`);
 process.stdout.write(`  2. Edit ${path.relative(repoRoot, targetDir)}/src/index.ts\n`);
 process.stdout.write(`  3. pnpm -r build\n`);
 process.stdout.write(`  4. pnpm dev (then open http://localhost:3000/settings)\n\n`);

@@ -8,7 +8,7 @@
 
 - 一个飞书 / Lark 的**企业 / 团队管理员**账号（个人账号也能创建，但只能在自己的企业里用）。
 - Goldpan 已经能在你电脑上启动（`pnpm dev` 或 `pnpm start` 能跑起来）。
-- 能编辑 `monorepo/.env` 文件。
+- 能编辑 `.env` 文件。
 
 ## 步骤 1：创建一个企业自建应用
 
@@ -127,9 +127,9 @@
 
 > **以后每次改权限或事件订阅，都得重新创建一次新版本并重新发布**，新配置才会生效。这是飞书的规则。
 
-## 步骤 7：填 `monorepo/.env`
+## 步骤 7：填 `.env`
 
-打开 `monorepo/.env`，找到 `Feishu` 这一段：
+打开 `.env`，找到 `Feishu` 这一段：
 
 ```bash
 # 必填：步骤 3 复制的 App ID
@@ -148,7 +148,6 @@ GOLDPAN_IM_FEISHU_DOMAIN=feishu.cn
 ## 步骤 8：启动 + 验证
 
 ```bash
-cd monorepo
 pnpm dev      # 或 pnpm start
 ```
 
@@ -203,7 +202,6 @@ App ID / Secret 错了，或者步骤 6 没发布版本。改完再启动。
 ## 不想手动改 .env？用 onboarding 向导
 
 ```bash
-cd monorepo
 pnpm onboard          # 浏览器里点点配（推荐）
 pnpm onboard:cli      # 纯命令行配
 ```

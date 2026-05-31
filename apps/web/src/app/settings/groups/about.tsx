@@ -54,27 +54,12 @@ export function GroupAbout({ toast }: GroupProps) {
       <SettingsCard heading={t('card_links')}>
         <SettingsField
           tagLabels={fieldTagLabels}
-          label={t('field_docs_label')}
-          control={
-            <Btn
-              sm
-              onClick={() => {
-                window.open('https://goldpan.dev/docs', '_blank', 'noopener');
-                toast({ msg: t('toast_open_docs') });
-              }}
-            >
-              {t('open_button')}
-            </Btn>
-          }
-        />
-        <SettingsField
-          tagLabels={fieldTagLabels}
           label={t('field_source_label')}
           control={
             <Btn
               sm
               onClick={() => {
-                window.open('https://github.com/goldpan/goldpan', '_blank', 'noopener');
+                window.open('https://github.com/sxw15/goldpan', '_blank', 'noopener');
                 toast({ msg: t('toast_open_github') });
               }}
             >

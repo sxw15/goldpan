@@ -58,7 +58,7 @@ export async function safeFetch(
       redirect: 'manual',
       signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; Goldpan/1.0; +https://github.com/user/goldpan)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Goldpan/1.0; +https://github.com/sxw15/goldpan)',
         Accept: 'text/html,application/xhtml+xml',
         'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
       },
