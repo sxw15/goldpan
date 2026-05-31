@@ -1,0 +1,16 @@
+{
+  "sites": [
+    {
+      "name": "YouTube",
+      "hosts": ["youtube.com", "youtu.be", "m.youtube.com", "music.youtube.com"]
+    },
+    {
+      "name": "Bilibili",
+      "hosts": ["bilibili.com", "b23.tv", "m.bilibili.com"]
+    },
+    {
+      "name": "Vimeo",
+      "hosts": ["vimeo.com", "player.vimeo.com"]
+    }
+  ]
+}

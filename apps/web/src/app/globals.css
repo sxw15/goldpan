@@ -1,0 +1,6 @@
+/* Goldpan global stylesheet — modular split lives under ../styles/.
+   This file is the single entry point Next.js loads via app/layout.tsx;
+   PostCSS resolves @import inline so all 30 source files become one CSS bundle.
+   See note/css-split-mapping.md for the split rationale and module layout. */
+
+@import "../styles/index.css";

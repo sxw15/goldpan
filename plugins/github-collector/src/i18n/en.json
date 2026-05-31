@@ -1,0 +1,7 @@
+{
+  "github.error.not_found": "Repository not found (it may not exist or may be private)",
+  "github.error.rate_limited": "GitHub API rate limit reached",
+  "github.error.upstream": "GitHub API is temporarily unavailable, please retry later",
+  "github.error.invalid_request": "Invalid request parameters",
+  "github.error.content_empty": "This project has no recent updates"
+}

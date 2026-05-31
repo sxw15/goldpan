@@ -1,0 +1,60 @@
+/* Status chip — shared by .gp-source-status-chip and .gp-status. */
+
+.gp-source-status-chip,
+.gp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.gp-source-status-chip::before,
+.gp-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.gp-source-status-chip--processing,
+.gp-status--processing {
+  background: var(--gp-badge-proc-bg, #fff7ed);
+  border-color: var(--gp-badge-proc-border, #fed7aa);
+  color: var(--gp-badge-proc-ink, #9a3412);
+}
+.gp-source-status-chip--processing::before,
+.gp-status--processing::before {
+  animation: gp-pulse 1.6s infinite;
+}
+.gp-source-status-chip--confirmed,
+.gp-status--confirmed {
+  background: var(--gp-badge-done-bg, #f0fdf4);
+  border-color: var(--gp-badge-done-border, #bbf7d0);
+  color: var(--gp-badge-done-ink, #166534);
+}
+.gp-source-status-chip--confirmed_empty,
+.gp-source-status-chip--confirmed-empty,
+.gp-status--confirmed_empty,
+.gp-status--pending {
+  background: var(--gp-badge-empty-bg, #fafafa);
+  border-color: var(--gp-badge-empty-border, #e5e5e5);
+  color: var(--gp-badge-empty-ink, #737373);
+}
+.gp-source-status-chip--failed,
+.gp-status--failed {
+  background: var(--gp-badge-err-bg, #fef2f2);
+  border-color: var(--gp-badge-err-border, #fecaca);
+  color: var(--gp-badge-err-ink, #991b1b);
+}
+.gp-source-status-chip--discarded,
+.gp-status--discarded {
+  background: var(--gp-badge-discard-bg, #f1f5f9);
+  border-color: var(--gp-badge-discard-border, #e2e8f0);
+  color: var(--gp-badge-discard-ink, #64748b);
+}

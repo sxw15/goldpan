@@ -1,0 +1,28 @@
+{
+  "name": "@goldpan/plugin-tool-search-google",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "pretest": "node ../../scripts/ensure-built.mjs @goldpan/core",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "playwright": "^1.55.0",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  }
+}

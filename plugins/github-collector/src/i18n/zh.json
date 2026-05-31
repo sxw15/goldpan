@@ -1,0 +1,7 @@
+{
+  "github.error.not_found": "找不到仓库（可能不存在或为私有）",
+  "github.error.rate_limited": "GitHub API 配额已用完",
+  "github.error.upstream": "GitHub API 暂时不可用，请稍后重试",
+  "github.error.invalid_request": "请求参数错误",
+  "github.error.content_empty": "该项目暂无更新"
+}

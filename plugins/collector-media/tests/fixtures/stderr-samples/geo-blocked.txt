@@ -1,0 +1,2 @@
+[youtube] xxxxxxxxxxx: Downloading webpage
+ERROR: [youtube] xxxxxxxxxxx: This video is not available in your country

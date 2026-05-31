@@ -1,0 +1,142 @@
+{
+  "pipeline": {
+    "classifying": {
+      "no_content": "No content available",
+      "compilation_failed": "Prompt compilation failed for classifier: {message}",
+      "failed": "Classification failed: {message}"
+    },
+    "collecting": {
+      "url_missing": "URL input missing both originalUrl and normalizedUrl",
+      "no_collector": "No collector found for URL: {url}",
+      "content_too_short": "Collected content too short to extract meaningful knowledge points",
+      "content_too_long": "Collected content too long ({length} characters, limit {limit}). Please manually trim the key portions and resubmit",
+      "input_too_long": "Input content too long ({length} characters, limit {limit}). Please reduce and resubmit",
+      "collection_failed": "Collection failed: {message}",
+      "validation_failed": "Content validation failed: {message}"
+    },
+    "extracting": {
+      "no_content": "No content available",
+      "compilation_failed": "Prompt compilation failed for extractor: {message}",
+      "failed": "Extraction failed: {message}"
+    },
+    "matching": {
+      "compilation_failed": "Prompt compilation failed for matcher: {message}",
+      "failed": "Matching failed: {message}"
+    },
+    "comparing": {
+      "no_matching_output": "matchingOutput is null — matching step must run first",
+      "invalid_entity_key": "Invalid entityKey format: {key}",
+      "failed": "Comparison failed ({entityName}): {message}"
+    },
+    "verifying": {
+      "non_target_key": "Verifier returned non-target pointKey \"{key}\", ignored",
+      "conflict": "Verification conflict: pointKey {key} appears in both verifiedPointKeys and rejectedPointKeys, treating as rejected",
+      "omission": "Verifier did not return a judgment for pointKey \"{key}\" (possible LLM response truncation), accepting by default",
+      "degraded": "Verification round failed, skipping verification and storing directly: {message}",
+      "degraded_generic": "an internal error occurred"
+    },
+    "storing": {
+      "invalid_entity_key": "Invalid entityKey format in storing: \"{key}\"",
+      "missing_matched_id": "skipped judgment for {pointKey} missing matchedPointId",
+      "verifier_rejected": "verifier rejected",
+      "entity_created": "New entity created: {name}",
+      "aliases_discovered": "New aliases discovered: {aliases}",
+      "point_created_fact": "New fact knowledge point added",
+      "point_created_opinion": "New opinion knowledge point added",
+      "source_confirmed": "Source confirmed and stored",
+      "source_confirmed_empty": "Source processed but no knowledge output"
+    },
+    "relating": {
+      "compilation_failed": "Relator prompt compilation failed: {message}",
+      "failed": "Relation extraction failed: {message}"
+    },
+    "translating": {
+      "degraded": "Translation step failed, originals will be used: {message}",
+      "missing_translation": "Translator returned no entry for id \"{id}\" — original kept"
+    }
+  },
+  "validation": {
+    "alias_parse_failed": "Failed to parse aliases for entity {id}, skipping alias dedup for this entity",
+    "draft_name_match": "draft \"{name}\" name matches existing entity [entity:{entityId}] \"{entityName}\", downgraded to reference",
+    "draft_downgrade_warning": "[draft→entity downgrade warning] entity:{entityId} has {count} active fact knowledge points, but this round's fact points were not LLM-compared (comparing stage ran as draft, all facts auto-judged as new)",
+    "draft_alias_match": "draft \"{name}\" name matches alias of existing entity \"{entityName}\", keeping as draft (alias match confidence insufficient)",
+    "draft_dedup": "Draft dedup: \"{name}\" merged into \"{target}\"",
+    "entity_ref_dedup": "Entity ref dedup: \"{name}\" ({key}) merged",
+    "unknown_point_key": "Unknown pointKey \"{key}\" ignored",
+    "duplicate_point_key": "Duplicate pointKey \"{key}\" ignored (keeping first)",
+    "invalid_matched_id": "matchedPointId {id} not in entity's existing knowledge points, downgrading to judgment='new'",
+    "skipped_null_matched": "judgment='skipped' but matchedPointId is null (pointKey: {key}), downgrading to judgment='new'",
+    "category_empty": "Draft entity category path is empty, using classifier suggestion: \"{fallback}\"",
+    "category_depth_exceeded": "Category path depth {depth} exceeds limit {limit}, truncated",
+    "category_segment_long": "Category path segment \"{segment}...\" exceeds {limit} characters, truncated",
+    "category_empty_after_norm": "Category path is empty after normalization, using classifier suggestion: \"{fallback}\"",
+    "relation_invalid_ref": "Relation dropped: entityKey not found (source={source}, target={target})",
+    "relation_self_ref": "Relation dropped: self-reference (key={key})",
+    "relation_invalid_type": "Relation dropped: invalid type \"{type}\"",
+    "relation_dedup": "Relation dropped: duplicate after promotion ({source} → {target}, type={type})"
+  },
+  "llm": {
+    "schema_validation": "LLM schema validation failed for step \"{step}\": {message}",
+    "content_policy": "Content policy violation in step \"{step}\": {message}",
+    "rate_limit": "Rate limit exceeded for step \"{step}\" after {retries} retries: {message}",
+    "timeout": "LLM call timeout for step \"{step}\" after {timeoutSeconds}s: {message}",
+    "generic_failure": "LLM call failed for step \"{step}\": {message}"
+  },
+  "worker": {
+    "source_not_found": "Source {sourceId} not found"
+  },
+  "intent": {
+    "classification_failed": "Intent classification failed: {message}"
+  },
+  "query": {
+    "empty_query": "Query is empty",
+    "too_long": "Query too long (max {limit} characters)",
+    "understand_failed": "Query understanding failed: {message}",
+    "search_failed": "Knowledge search failed: {message}",
+    "answer_failed": "Answer generation failed: {message}"
+  },
+  "intent_note": {
+    "saved_assistant_text": "Saved as note #{noteId}"
+  },
+  "intent_tracking": {
+    "pending_pipeline_assistant_text": "Waiting for the source analysis to finish before setting up tracking",
+    "pending_multi_entity_assistant_text": "Please pick which subject to track"
+  },
+  "intent_classifier": {
+    "wait_indicator_im_text": "Waiting for more context ({seconds}s — keep typing, or /release to run now, /cancel to drop it)",
+    "no_active_buffer": "No pending message is waiting",
+    "cancelled": "Cancelled",
+    "wait_reason": {
+      "incomplete_referent": "Referent not found",
+      "incomplete_command": "Incomplete command",
+      "awaiting_url": "Awaiting URL",
+      "awaiting_clarification": "Awaiting clarification"
+    },
+    "clarify_question": {
+      "ambiguous_intent": "What did you mean?",
+      "unclear_target": "Which subject?",
+      "incomplete_action": "What action?"
+    },
+    "clarify_option": {
+      "create_note": "Save as note",
+      "submit_url": "Submit URL",
+      "query": "Query knowledge",
+      "create_tracking": "Set up tracking",
+      "submit_text": "Submit as text",
+      "record_thought": "Record thought"
+    }
+  },
+  "tracking": {
+    "resolved_assistant_text": "Tracking \"{name}\" is set up.",
+    "failed_no_entity_assistant_text": "Could not extract an entity from that source, so no tracking was set up. Tell me directly what you want to track.",
+    "failed_source_pipeline_assistant_text": "The source failed to process, so tracking cannot be set up from it.",
+    "awaiting_clarify_assistant_text": "Found multiple entities — pick which one to track:",
+    "awaiting_clarify_timeout_assistant_text": "The previous entity choice was not confirmed within 24 hours and has been dropped. Start the tracking request again if you still need it."
+  },
+  "notes": {
+    "subtype": {
+      "memo": "Memo",
+      "note": "Note"
+    }
+  }
+}

@@ -1,0 +1,66 @@
+/* Toast — bottom-center transient notification stack.
+   Used by <ToastStack> (task-detail / settings / digest) and library-shell's
+   single-toast usage. Both render `.gp-toast-stack > .gp-toast`. */
+
+.gp-toast-stack {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--gp-space-2);
+  z-index: 60;
+  pointer-events: none;
+}
+
+.gp-toast {
+  background: var(--gp-toast-bg);
+  color: var(--gp-toast-ink);
+  padding: 10px 14px;
+  border-radius: var(--gp-radius-md);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-3);
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  min-width: 260px;
+  animation: gp-toast-in 0.22s ease-out;
+}
+
+.gp-toast[data-variant="success"] {
+  background: var(--gp-toast-success-bg);
+}
+
+.gp-toast[data-variant="danger"] {
+  background: var(--gp-toast-danger-bg);
+}
+
+.gp-toast__msg {
+  flex: 1;
+}
+
+.gp-toast__btn {
+  font: inherit;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--gp-toast-border);
+  color: inherit;
+  padding: 3px 10px;
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+}
+
+.gp-toast__btn:hover {
+  background: var(--gp-toast-hover);
+}
+
+.gp-toast__close {
+  background: transparent;
+  border: none;
+  color: var(--gp-toast-close-ink);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}

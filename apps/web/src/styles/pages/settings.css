@@ -1,0 +1,3001 @@
+/* Settings page — see Settings Prototype.html handoff.
+
+   3-zone shell: top nav (rendered by layout) + secondary group nav (.gp-snav)
+   + content (.gp-smain). On narrow screens collapses to a single column with a
+   sticky group switcher.
+
+   Keyframes used here (gp-fade-in, gp-drawer-in, gp-modal-in, gp-pulse) live
+   in utils/animations.css. */
+
+.gp-settings__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: var(--gp-ink);
+}
+
+/* Settings page wraps a full-bleed grid; cancel .gp-main horizontal padding so
+   the left rail butts up against the topnav border. */
+.gp-settings-page {
+  flex: 1;
+  min-height: 0;
+  margin: -1rem -1.25rem 0;
+  display: flex;
+  flex-direction: column;
+}
+@media (min-width: 640px) {
+  .gp-settings-page {
+    margin: -1.25rem -1.75rem 0;
+  }
+}
+@media (min-width: 1024px) {
+  .gp-settings-page {
+    margin: -1.5rem -2rem 0;
+  }
+}
+
+.gp-settings {
+  background: var(--gp-bg);
+  flex: 1;
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: calc(100dvh - var(--gp-topnav-h));
+}
+
+.gp-settings__mobile-trigger {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .gp-settings {
+    grid-template-columns: 1fr;
+  }
+  .gp-settings__mobile-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--gp-surface);
+    border-bottom: 1px solid var(--gp-border);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gp-ink);
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
+    width: 100%;
+    cursor: pointer;
+    font-family: inherit;
+    position: sticky;
+    top: var(--gp-topnav-h);
+    z-index: 10;
+  }
+}
+
+/* ─── Group nav (left rail) ─────────────────────────────────────────────── */
+
+.gp-snav {
+  background: var(--gp-bg);
+  border-right: 1px solid var(--gp-border);
+  padding: 28px 14px 60px;
+  position: sticky;
+  top: var(--gp-topnav-h);
+  align-self: start;
+  height: calc(100dvh - var(--gp-topnav-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Header tooltips extend outside the rail; only the group list scrolls. */
+  overflow: visible;
+}
+
+@media (max-width: 768px) {
+  .gp-snav {
+    display: none;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--gp-border);
+    position: static;
+    padding: 12px 14px 16px;
+  }
+  .gp-snav--open {
+    display: flex;
+  }
+}
+
+.gp-snav__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .gp-snav__scroll {
+    flex: 0 1 auto;
+    overflow-y: visible;
+  }
+}
+
+.gp-snav__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 8px;
+}
+.gp-snav__title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  color: var(--gp-ink);
+}
+.gp-snav__actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Square icon-only toggle reusing .gp-btn surface tokens but tightened to a
+ * 28×28 hit area so it sits beside the wider Export button without crowding
+ * the 248px sidebar header. Active state is driven by data-variant=primary
+ * (set in JSX via aria-pressed → kind switch); the .gp-btn[data-variant]
+ * rules already give it ink-bg/on-ink-fg so the icon stays visible. The
+ * compound .gp-btn.gp-snav__env-toggle selector wins specificity over
+ * .gp-btn[data-size="sm"] so the padding override sticks. */
+.gp-btn.gp-snav__env-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+/* Hover · speech-bubble hint (tail points at the export button, body sits in main column). */
+.gp-snav__tip-host {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+}
+.gp-snav__tip-bubble {
+  position: absolute;
+  left: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--gp-ink);
+  background: var(--gp-popover-bg, var(--gp-surface));
+  border: 1px solid var(--gp-popover-border, var(--gp-border));
+  border-radius: 10px;
+  box-shadow: var(--gp-popover-shadow);
+  white-space: normal;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.08s ease,
+    visibility 0.08s ease;
+}
+/* Outer triangle — border color */
+.gp-snav__tip-bubble::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 9px 11px 9px 0;
+  border-color: transparent var(--gp-popover-border, var(--gp-border)) transparent transparent;
+}
+/* Inner triangle — fills arrow with surface (covers outer except edge) */
+.gp-snav__tip-bubble::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: calc(100% - 1px);
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 10px 8px 0;
+  border-color: transparent var(--gp-popover-bg, var(--gp-surface)) transparent transparent;
+}
+.gp-snav__tip-host:hover .gp-snav__tip-bubble,
+.gp-snav__tip-host:focus-within .gp-snav__tip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gp-snav__tip-bubble {
+    transition: none;
+  }
+}
+.gp-snav__heading {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gp-ink-faint);
+  padding: 14px 8px 6px;
+}
+.gp-snav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--gp-ink-muted);
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  position: relative;
+}
+.gp-snav__item:hover {
+  background: var(--gp-hover-bg);
+  color: var(--gp-ink);
+}
+.gp-snav__item[aria-pressed="true"] {
+  background: var(--gp-active-bg);
+  color: var(--gp-ink);
+  font-weight: 600;
+}
+.gp-snav__item-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gp-ink-faint);
+  flex-shrink: 0;
+}
+.gp-snav__item[aria-pressed="true"] .gp-snav__item-icon {
+  color: var(--gp-ink);
+}
+.gp-snav__item-label {
+  flex: 1;
+}
+.gp-snav__item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gp-danger);
+}
+.gp-snav__item-dot--warn {
+  background: var(--gp-badge-warn-ink);
+}
+.gp-snav__item-readonly {
+  font-size: 10px;
+  color: var(--gp-ink-faint);
+}
+
+/* ─── Main column ──────────────────────────────────────────────────────── */
+
+.gp-smain {
+  padding: 28px 36px 80px;
+  max-width: 880px;
+  min-width: 0;
+}
+.gp-smain--wide {
+  max-width: 1080px;
+}
+
+@media (max-width: 768px) {
+  .gp-smain {
+    padding: 20px 16px 80px;
+    max-width: none;
+  }
+}
+
+/* ─── Header ───────────────────────────────────────────────────────────── */
+
+.gp-shead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gp-space-4);
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.gp-shead__main {
+  min-width: 0;
+}
+.gp-shead__crumb {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  font-family: var(--gp-font-mono);
+  letter-spacing: 0.02em;
+  margin: 0 0 6px;
+}
+.gp-shead__title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--gp-ink);
+}
+.gp-shead__desc {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--gp-ink-muted);
+  max-width: 640px;
+  line-height: 1.55;
+}
+.gp-shead__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gp-shead__actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* Inline RestartPanel slot inside the about page. RestartPanel ships its
+   own bordered surface, so we don't wrap it in .gp-scard — but we still
+   want the same vertical rhythm between SettingsHead and the panel as
+   between SettingsHead and the first .gp-scard (margin-top: 18px). */
+.gp-settings-restart-slot {
+  margin-top: 18px;
+}
+
+/* ─── Cards ────────────────────────────────────────────────────────────── */
+
+.gp-scard {
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 10px;
+  margin-top: 18px;
+  overflow: hidden;
+}
+.gp-scard__head {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--gp-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gp-space-3);
+  flex-wrap: wrap;
+}
+.gp-scard__head--no-border {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+/* Heading row only — no body below. Symmetric padding so the block doesn’t read
+   as a flat strip when the card is full-width (e.g. onboarding language row). */
+.gp-scard__head--solo {
+  border-bottom: 0;
+  padding: 18px 20px;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+.gp-scard__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  color: var(--gp-ink);
+}
+.gp-scard__sub {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  margin: 3px 0 0;
+}
+.gp-scard__body {
+  padding: 4px 0;
+}
+.gp-scard__body--padded {
+  padding: 16px 18px;
+}
+
+/* ─── Field rows ───────────────────────────────────────────────────────── */
+
+.gp-field {
+  display: grid;
+  /* 左列吃掉「控件左侧」的余量 —— cap 在 320px/40% 时标题/hint 会过早折行，
+   * 视觉上右侧大片空白却无法利用（embedding 长标题、digest 段落等）。
+   * 右列 auto 仅占 value+control 宽度，与 gp-search-engine-block / gp-usage 一致。 */
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gp-space-4);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+  min-height: 48px;
+}
+.gp-field:last-child {
+  border-bottom: 0;
+}
+.gp-field__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gp-ink);
+  display: flex;
+  flex-direction: column;
+}
+.gp-field__title-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: var(--gp-space-2);
+}
+.gp-field__label-main {
+  /* grow:0 — 短标题只占内容宽，「改后需重启」贴在标题后，不会撑到左栏最右 */
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.gp-field__title-tags {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+.gp-field__hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  font-weight: 400;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+.gp-field__tags {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.gp-field__trail {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gp-space-4);
+  min-width: 0;
+}
+.gp-field__value {
+  font-size: 13px;
+  color: var(--gp-ink-muted);
+  font-family: var(--gp-font-mono);
+  letter-spacing: -0.005em;
+  word-break: break-all;
+  min-width: 0;
+  max-width: 100%;
+}
+.gp-field__value--ink {
+  color: var(--gp-ink);
+  font-family: var(--gp-font-ui);
+  font-weight: 500;
+}
+.gp-field__control {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+.gp-field--stack {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: var(--gp-space-2);
+}
+.gp-field--stack .gp-field__trail {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--gp-space-2);
+}
+.gp-field--stack .gp-field__control {
+  justify-content: flex-start;
+}
+
+/* 带「用法 / 速查」时 trail 顶对齐（多行 cheatsheet + 右上角 toggle）。 */
+.gp-field:has(.gp-usage) {
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .gp-field {
+    grid-template-columns: 1fr;
+    gap: var(--gp-space-2);
+  }
+  .gp-field__trail {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .gp-field__control {
+    justify-content: flex-start;
+  }
+}
+
+/* ─── Usage cheat sheet (collapsible per-engine) ──────────────────────── */
+/* 用在 settings/groups/search.tsx —— 每家搜索引擎下面的「用法 / 速查」折叠
+   块。结构：<details><summary> + <div className="gp-usage__body">…</div>。
+   summary 默认收起，单行小灰字 chip 样式；展开后是 ops/fields 列表 +
+   caveat。短描述用 .gp-usage__short 与 details 同行展示。 */
+.gp-usage__short {
+  display: block;
+  margin-bottom: 6px;
+}
+.gp-usage {
+  margin-top: 2px;
+  font-size: 11.5px;
+}
+.gp-usage__summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  color: var(--gp-ink-muted);
+  font-weight: 500;
+  user-select: none;
+}
+.gp-usage__summary::-webkit-details-marker {
+  display: none;
+}
+.gp-usage__summary::before {
+  content: "▸";
+  font-size: 9px;
+  color: var(--gp-ink-faint);
+  transition: transform 0.15s ease;
+}
+.gp-usage[open] > .gp-usage__summary::before {
+  transform: rotate(90deg);
+}
+.gp-usage__summary:hover {
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+}
+.gp-usage__body {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--gp-bg);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gp-usage__intro {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gp-ink-muted);
+}
+.gp-usage__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gp-usage__list li {
+  font-size: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.5;
+  color: var(--gp-ink-muted);
+}
+.gp-usage__list code {
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  background: var(--gp-surface-raised);
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--gp-ink);
+  white-space: nowrap;
+}
+.gp-usage__caveat {
+  margin: 0;
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  padding-top: 6px;
+  border-top: 1px dashed var(--gp-border);
+  font-style: italic;
+}
+
+/* ─── Search engine blocks ────────────────────────────────────────────── */
+/* 仿 `.gp-llm-provider-block` —— 每家搜索引擎是一个带边框的子卡片，head
+   只放品牌名，body 承载 fields / actions。否则 Google 那种 1 toggle +
+   3 number field 的引擎会让用户分不清「每小时限额 / 最小延迟 / 最大延迟」
+   属于谁。结构与 settings/groups/search.tsx 的 PluginGroupRows 对应。 */
+
+.gp-search-engine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 18px;
+}
+
+.gp-search-engine-block {
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  overflow: hidden;
+}
+.gp-search-engine-block__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-search-engine-block__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+/* block 外边框已是视觉闭合，body 里 field 行的 bottom-border 留到倒数
+   第二行即可，最后一行抹掉（与 `.gp-llm-provider-block` 同样的处理）。 */
+.gp-search-engine-block .gp-field:last-child {
+  border-bottom: 0;
+}
+/* 搜索引擎卡片内多为多行 hint：trail 与 label 顶对齐（全局已用 1fr | auto 列）。 */
+.gp-search-engine-block .gp-field {
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .gp-search-engine-block .gp-field {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── Inputs / selects ─────────────────────────────────────────────────── */
+
+.gp-sinput {
+  appearance: none;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  min-width: 200px;
+}
+.gp-sinput:focus {
+  border-color: var(--gp-ink);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+.gp-sinput--mono {
+  font-family: var(--gp-font-mono);
+}
+.gp-sinput--full {
+  width: 100%;
+  min-width: 0;
+}
+
+.gp-sselect {
+  appearance: none;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23999' d='M0 0h10L5 6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* Toggle moved to primitives/toggle.css (Phase C review fix v3 — gp-stoggle → gp-toggle). */
+
+/* ─── Tags ─────────────────────────────────────────────────────────────── */
+
+.gp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.01em;
+  font-family: var(--gp-font-ui);
+  white-space: nowrap;
+}
+/* Hover hint host — bubble is portaled to `body` with `position: fixed` so `.gp-scard { overflow: hidden }` does not clip it. */
+.gp-tag-tip {
+  display: inline-flex;
+  cursor: help;
+  vertical-align: baseline;
+}
+.gp-tag-tip__bubble {
+  box-sizing: border-box;
+  width: max-content;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--gp-ink);
+  background: var(--gp-popover-bg, var(--gp-surface));
+  border: 1px solid var(--gp-popover-border, var(--gp-border));
+  border-radius: 10px;
+  box-shadow: var(--gp-popover-shadow);
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.gp-tag-tip__bubble--portal {
+  position: fixed;
+  z-index: 10000;
+  margin: 0;
+  pointer-events: auto;
+}
+.gp-tag-tip__link {
+  font-weight: 600;
+  color: var(--gp-link);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.gp-tag--live {
+  color: var(--gp-badge-done-ink);
+  background: var(--gp-badge-done-bg);
+  border-color: var(--gp-badge-done-border);
+}
+.gp-tag--restart {
+  color: var(--gp-badge-amber-ink);
+  background: var(--gp-badge-amber-bg);
+  border-color: var(--gp-badge-amber-border);
+}
+.gp-tag--restart .gp-tag__hover-affordance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 13px;
+  height: 13px;
+  margin-left: 2px;
+  padding: 0 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.92;
+  flex-shrink: 0;
+}
+.gp-tag--env {
+  color: var(--gp-badge-slate-ink);
+  background: var(--gp-badge-slate-bg);
+  border-color: var(--gp-badge-slate-border);
+  font-family: var(--gp-font-mono);
+}
+.gp-tag--readonly {
+  color: var(--gp-badge-slate-light-ink);
+  background: var(--gp-badge-slate-light-bg);
+  border-color: var(--gp-badge-slate-light-border);
+}
+.gp-tag--default {
+  color: var(--gp-badge-info-ink);
+  background: var(--gp-badge-info-bg);
+  border-color: var(--gp-badge-info-border);
+}
+.gp-tag--beta {
+  color: var(--gp-badge-purple-ink);
+  background: var(--gp-badge-purple-bg);
+  border-color: var(--gp-badge-purple-border);
+}
+.gp-tag--todo {
+  color: var(--gp-badge-amber-ink);
+  background: var(--gp-badge-amber-bg);
+  border-color: var(--gp-badge-amber-border);
+  border-style: dashed;
+}
+.gp-tag--shadowed {
+  color: var(--gp-badge-err-ink);
+  background: var(--gp-badge-err-bg);
+  border-color: var(--gp-badge-err-border);
+}
+
+/* ─── Origin badge (env / override / default) ───────────────────────────
+ *
+ * Inline pill rendered next to each settings row to surface where the
+ * live value of an env key is coming from. `[override]` pops with the
+ * accent palette so users can see at a glance which keys have been
+ * persisted as runtime overrides (and are reversible via the Reset
+ * button); `[env]` and `[default]` use muted slate so they fade into the
+ * meta-tag row. The optional `__diff-mark` is a small `!` shown when
+ * baselineDiffers is true — paired with a `title=` hover hint warning
+ * that the baseline disagrees with the override.
+ */
+.gp-origin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.01em;
+  font-family: var(--gp-font-mono);
+  white-space: nowrap;
+}
+.gp-origin-badge--env {
+  color: var(--gp-badge-slate-ink);
+  background: var(--gp-badge-slate-bg);
+  border-color: var(--gp-badge-slate-border);
+}
+.gp-origin-badge--default {
+  color: var(--gp-badge-slate-light-ink);
+  background: var(--gp-badge-slate-light-bg);
+  border-color: var(--gp-badge-slate-light-border);
+}
+.gp-origin-badge--override {
+  color: var(--gp-badge-info-ink);
+  background: var(--gp-badge-info-bg);
+  border-color: var(--gp-badge-info-border);
+}
+.gp-origin-badge__diff-mark {
+  font-weight: 700;
+  color: var(--gp-badge-err-ink);
+  margin-left: 2px;
+}
+
+/* ─── Notice / banner ──────────────────────────────────────────────────── */
+
+.gp-notice {
+  display: flex;
+  gap: var(--gp-space-3);
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+.gp-notice--warn {
+  background: var(--gp-badge-amber-bg);
+  color: var(--gp-badge-amber-ink);
+  border: 1px solid var(--gp-badge-amber-border);
+}
+.gp-notice--info {
+  background: var(--gp-badge-slate-bg);
+  color: var(--gp-badge-slate-ink);
+  border: 1px solid var(--gp-badge-slate-border);
+}
+.gp-notice--ok {
+  background: var(--gp-badge-done-bg);
+  color: var(--gp-badge-done-ink);
+  border: 1px solid var(--gp-badge-done-border);
+}
+.gp-notice__icon {
+  font-size: 14px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.gp-notice__title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.gp-notice__body {
+  flex: 1;
+  min-width: 0;
+}
+.gp-notice__detail {
+  font-size: 11.5px;
+}
+.gp-notice__trailing {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.gp-notice code {
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.gp-notice__cmd {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 5px;
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  color: var(--gp-ink);
+}
+.gp-notice__cmd b {
+  color: var(--gp-warn-accent-ink);
+  font-weight: 600;
+}
+
+/* Step list used inside `DigestPrereqNotice` — flat bullet list of the LLM step
+ * names the digest depends on, with no provider / env-key painted on. Step
+ * labels already contain identifier + 中文, so the list stays self-explanatory
+ * without a dedicated mono treatment. */
+.gp-prereq-steps__body {
+  margin: 0 0 6px;
+}
+.gp-prereq-steps__list {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* Card-footer variant — banner glued to bottom of .gp-scard. Removes radius +
+ * border + top margin so the notice reads as continuation of the card body, not
+ * a free-floating box. The 1px boundary above the notice comes from the field
+ * row's `border-bottom`, so dropping our border avoids the double-line that
+ * appears when both stack. Horizontal padding matches `.gp-field` (18px) so
+ * the title and body align with the field rows above. Used by settings cards
+ * that pair a toggle with a footer hint (account SSRF, etc.). */
+.gp-notice--card-footer {
+  margin-top: 0;
+  /* Eats `.gp-scard__body { padding: 4px 0 }` bottom-padding so the banner sits
+   * flush with the card's rounded bottom edge — `.gp-scard { overflow: hidden }`
+   * clips the banner background into the corner radius, no visible white sliver. */
+  margin-bottom: -4px;
+  border-radius: 0;
+  border: 0;
+  padding: 10px 18px;
+}
+.gp-ssrf-help {
+  margin-top: 6px;
+}
+.gp-ssrf-help > summary {
+  cursor: pointer;
+  font-weight: 500;
+  user-select: none;
+}
+.gp-ssrf-help > p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  opacity: 0.85;
+}
+
+/* ─── Plugins group ────────────────────────────────────────────────────── */
+
+/* 每个 type（内容采集 / 自动化任务 / 搜索后端）一个带边框的子卡片，
+   仿 `.gp-search-engine-block` —— head 放分类名 + count，body 承载
+   plugin row 列表。让插件页的分组视觉粒度与搜索工具页对齐。 */
+.gp-plugins__type-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.gp-plugins__type-block {
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  overflow: hidden;
+}
+.gp-plugins__type-block__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-plugins__type-block__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+.gp-plugins__type-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gp-ink-muted);
+  font-variant-numeric: tabular-nums;
+  background: var(--gp-surface);
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--gp-border);
+}
+
+.gp-plugin-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+  align-items: flex-start;
+}
+.gp-plugin-row:last-child {
+  border-bottom: 0;
+}
+.gp-plugin-row__left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.gp-plugin-row__name {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--gp-font-mono);
+  color: var(--gp-ink);
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  word-break: break-word;
+}
+.gp-plugin-row__name small {
+  font-size: 10.5px;
+  color: var(--gp-ink-faint);
+  font-weight: 400;
+}
+.gp-plugin-row__middle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 1px;
+}
+.gp-plugin-row__desc {
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.gp-plugin-row__envkeys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.gp-plugin-row__envkeys li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gp-plugin-row__envkeys code {
+  font-family: var(--gp-font-mono);
+  font-size: 11px;
+  color: var(--gp-ink-muted);
+  background: var(--gp-surface-raised);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.gp-plugin-row__right {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.gp-envkey-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.gp-envkey-dot--ok {
+  background: var(--gp-badge-done-ink);
+}
+.gp-envkey-dot--missing {
+  background: var(--gp-border-strong);
+}
+
+.gp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.gp-status-badge[data-status="failed"] {
+  color: var(--gp-badge-err-ink);
+  background: var(--gp-badge-err-bg);
+  border-color: var(--gp-badge-err-border);
+}
+.gp-status-badge[data-status="skipped_conflict"] {
+  color: var(--gp-badge-amber-ink);
+  background: var(--gp-badge-amber-bg);
+  border-color: var(--gp-badge-amber-border);
+}
+
+.gp-plugins__manual-install {
+  margin-top: 12px;
+}
+.gp-plugins__manual-install h4 {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gp-ink-muted);
+  margin: 0 0 6px;
+}
+.gp-plugins__manual-install ol {
+  margin: 0 0 6px;
+  padding-left: 22px;
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  line-height: 1.7;
+}
+.gp-plugins__manual-install p {
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  margin: 0;
+}
+.gp-plugins__footer-troubleshoot {
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  text-align: center;
+  margin: 12px 0 0;
+}
+
+/* ─── LLM matrix ───────────────────────────────────────────────────────── */
+
+.gp-llm-matrix {
+  /* 三张子卡（pipeline / query / digest）的列表容器 —— 仿 `.gp-search-engine-list`
+   * 的卡组模式：每张子卡自带边框 + 圆角 + 白底，靠卡片间留白做分组分隔，
+   * 不再依赖薄分隔线 + 浅底色那种"section in a card"的弱视觉。 */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.gp-llm-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 160px;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+  align-items: center;
+  font-size: 13px;
+}
+.gp-llm-row:last-child {
+  border-bottom: 0;
+}
+.gp-llm-row__step {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  color: var(--gp-ink);
+}
+.gp-llm-row__step-num {
+  font-family: var(--gp-font-mono);
+  font-size: 10.5px;
+  color: var(--gp-ink-faint);
+  border: 1px solid var(--gp-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: 500;
+}
+.gp-llm-row__model {
+  font-family: var(--gp-font-mono);
+  font-size: 12px;
+  color: var(--gp-ink);
+}
+.gp-llm-row__provider {
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  font-family: var(--gp-font-mono);
+}
+
+/* ─── LLM matrix · editable PipelineStepRow ─────────────────────────────── */
+
+/* Pipeline / query / digest 各自一张子卡 —— 仿 `.gp-search-engine-block`：
+ * 边框 + 圆角 + 白底闭合视觉边界，head 顶一条 bottom-border 把标题区跟 step
+ * 行区隔开。子卡内部的 step rows 之间仍由 `.gp-field` 自己的 bottom-border
+ * 撑开；最后一行的 border 抹掉避免和 block 外边框双线。 */
+.gp-llm-section {
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  overflow: hidden;
+}
+.gp-llm-section--separated {
+  /* No longer relevant — visual separation now comes from the parent
+   * `.gp-llm-matrix` gap. Kept as a no-op so the JSX class toggle keeps
+   * compiling without spreading a special case to render-time logic. */
+}
+.gp-llm-section__head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-llm-section__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--gp-ink);
+}
+.gp-llm-section__desc {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.gp-llm-section > .gp-field:last-child {
+  border-bottom: 0;
+}
+
+/* Pickers grid: TWO fixed 200px columns so the provider + model selects sit
+   at the same x coordinate across every row, regardless of whether the row
+   has an inline toggle, a reset button, or neither. Previously these were
+   flex `flex: 0 0 auto; max-width: 200px` and shrank to content width,
+   producing 4 different sel1Left coordinates (598/601/631/709) — i.e. the
+   "messy" look in the screenshot. */
+.gp-llm-step-row__pickers {
+  display: grid;
+  grid-template-columns: 200px 200px;
+  align-items: center;
+  gap: var(--gp-space-2);
+  width: 408px;
+  min-width: 0;
+}
+.gp-llm-step-row__pickers > .gp-sselect {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+.gp-llm-step-row__pickers > .gp-sinput {
+  width: 100%;
+  min-width: 0;
+}
+/* LLM matrix rows: lock the field's value column to the pickers width and
+   stack toggle / reset vertically in the control slot. Horizontal layout
+   would have those two controls fighting for space → label/hint column
+   squeezed; stacking keeps the slot narrow (~120px) so the long Chinese
+   hint stays in a reasonable column width.
+   Don't pin the label column with a min width — the trail's value (408px)
+   plus control (120px) already adds up to ~540px, which is the right edge
+   the hint column must yield to. A `minmax(N, 1fr)` floor on the label
+   column would push the trail past the row's container and overlap the
+   hint at narrow viewports.
+   Vertical alignment: every cell (label/hint, pickers, toggle+reset group)
+   is centered against the row's overall height — explicit user request so
+   the three regions read as a single horizontal band even when the hint
+   wraps into multiple lines. */
+.gp-field:has(.gp-llm-step-row__pickers) {
+  align-items: center;
+}
+.gp-field:has(.gp-llm-step-row__pickers) .gp-field__trail {
+  align-items: center;
+}
+.gp-field:has(.gp-llm-step-row__pickers) .gp-field__value {
+  width: 408px;
+  flex: 0 0 408px;
+  align-self: center;
+}
+.gp-field:has(.gp-llm-step-row__pickers) .gp-field__control {
+  width: 120px;
+  flex: 0 0 120px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+}
+.gp-llm-step-row__warn {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  color: var(--gp-warn-accent-ink);
+}
+.gp-llm-step-row__disabled-hint {
+  flex-basis: 100%;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+.gp-llm-step-row__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  white-space: nowrap;
+}
+.gp-llm-step-row__toggle-origin {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Per-step timeout pill on PipelineStepRow: just a small read-only badge
+   that surfaces "this step has its own timeout" without an inline editor.
+   Editing happens in the LlmTimeoutPanel below the matrix. */
+.gp-llm-step-row__timeout-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 22px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--gp-ink-muted);
+  background: var(--gp-surface-muted);
+  border: 1px solid var(--gp-border-faint);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ─── Reasoning (thinking-mode) advanced section per LLM step row ────
+   Wrapper holds the SettingsField + collapsible reasoning details below.
+   Details is collapsed by default and visually faint — thinking is
+   opt-in, not a primary config the user is expected to set. */
+.gp-llm-step-row-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.gp-llm-step-row__advanced {
+  margin: 2px 0 0 8px;
+  padding-left: 10px;
+  border-left: 2px solid var(--gp-border-faint);
+}
+.gp-llm-step-row__advanced-summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  padding: 4px 0;
+  list-style-position: inside;
+}
+.gp-llm-step-row__advanced-summary:hover {
+  color: var(--gp-ink);
+}
+.gp-llm-step-row__advanced-body {
+  padding: 6px 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gp-llm-step-row__advanced-body--disabled {
+  font-size: 12px;
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+.gp-llm-step-row__advanced-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  font-size: 12.5px;
+}
+.gp-llm-step-row__advanced-label {
+  color: var(--gp-ink-muted);
+  white-space: nowrap;
+}
+.gp-llm-step-row__advanced-custom {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  font-style: italic;
+}
+.gp-llm-step-row__advanced-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  line-height: 1.5;
+}
+
+/* ─── LLM timeout panel (global + collapsible per-step overrides) ───── */
+.gp-llm-timeout-panel {
+  display: flex;
+  flex-direction: column;
+}
+.gp-llm-timeout-global {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+}
+.gp-llm-timeout-global__input {
+  width: 88px;
+  min-width: 0;
+  text-align: right;
+}
+.gp-llm-timeout-global__unit {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+.gp-llm-timeout-advanced {
+  border-top: 1px solid var(--gp-border-faint);
+  padding: 12px 18px 0;
+}
+/* Keep summary's default `display: list-item` so Chrome paints the native
+   ▸/▾ disclosure triangle — custom ::before markers proved unreliable
+   across browser defaults / dark theme overrides. Float the count chip to
+   the right so the heading text + native marker stay on the left without
+   fighting flex layout. */
+.gp-llm-timeout-advanced__summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--gp-ink);
+  padding: 6px 0;
+}
+.gp-llm-timeout-advanced__count {
+  float: right;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+.gp-llm-timeout-advanced__count {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+.gp-llm-timeout-advanced__hint {
+  margin: 4px 0 12px;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+.gp-llm-timeout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+}
+.gp-llm-timeout-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 96px auto auto;
+  align-items: center;
+  gap: var(--gp-space-2);
+  padding: 4px 0;
+}
+.gp-llm-timeout-row__label {
+  font-size: 13px;
+  color: var(--gp-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gp-llm-timeout-row__input {
+  width: 88px;
+  min-width: 0;
+  text-align: right;
+}
+.gp-llm-timeout-row__unit {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+.gp-llm-timeout-row__reset {
+  display: inline-flex;
+  align-items: center;
+  min-width: 48px;
+  justify-content: flex-end;
+}
+.gp-llm-timeout-row__warn {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--gp-warn-accent-ink);
+}
+
+/* ─── LLM provider blocks (configured builtin + custom) ───────────────── */
+/* Each configured provider renders as an independent card-shaped block:
+   header (name + status tags + edit/delete) + body (the chip-style models
+   editor). Keeps providers visually separated so users no longer ask
+   "where does Anthropic end and OpenAI begin?". */
+
+.gp-llm-provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.gp-llm-empty {
+  margin: 0;
+  padding: 12px 0;
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  text-align: center;
+}
+
+.gp-llm-provider-block {
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  overflow: hidden;
+}
+.gp-llm-provider-block__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-llm-provider-block__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+.gp-llm-provider-block__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  overflow-wrap: anywhere;
+}
+.gp-llm-provider-block__actions {
+  display: flex;
+  gap: var(--gp-space-2);
+  margin-left: auto;
+}
+.gp-llm-provider-block__body {
+  /* The body hosts ProviderModelsField, which is itself a `.gp-field` with
+     its own padding. We let it flow without additional inset so the field's
+     conventional padding aligns with the head's content. */
+}
+/* `.gp-field` inside a provider block already has its own bottom border —
+   suppress it because the block's outer border is the visual closure. */
+.gp-llm-provider-block .gp-field {
+  border-bottom: 0;
+}
+
+/* Compact model-list slot inside a provider card body. Replaces the old
+   SettingsField wrapping, which repeated hint paragraphs + .env tags
+   verbatim per provider. */
+.gp-llm-models {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+.gp-llm-models__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+}
+.gp-llm-models__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+.gp-llm-models__head .gp-btn + .gp-btn {
+  margin-left: 6px;
+}
+.gp-llm-models__hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--gp-ink-faint);
+}
+
+/* ─── LLM extra providers (custom + plugin, read-only) ─────────────────── */
+
+.gp-llm-extra-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--gp-space-3);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+  font-size: 13px;
+}
+.gp-llm-extra-row:last-child {
+  border-bottom: 0;
+}
+.gp-llm-extra-row__id {
+  font-family: var(--gp-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+  min-width: 120px;
+}
+.gp-llm-extra-row__meta {
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.gp-llm-extra-row__actions {
+  display: flex;
+  gap: var(--gp-space-2);
+  margin-left: auto;
+}
+.gp-llm-extra-row__error {
+  flex-basis: 100%;
+  margin-top: var(--gp-space-2);
+  font-size: 12px;
+}
+.gp-llm-extra-row__error > summary {
+  cursor: pointer;
+  color: var(--gp-ink-faint);
+  font-size: 11.5px;
+}
+.gp-llm-extra-row__error > pre {
+  margin-top: var(--gp-space-2);
+  padding: var(--gp-space-2) var(--gp-space-3);
+  background: var(--gp-surface-soft, #f7f7f7);
+  border: 1px solid var(--gp-border);
+  border-radius: 4px;
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  color: var(--gp-ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── Add Provider card / modals ───────────────────────────────────────── */
+
+.gp-add-provider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-3);
+  padding: 12px 18px;
+}
+.gp-add-provider-actions > button {
+  /* Brand-name labels («添加 OpenAI», «添加 OpenRouter») were wrapping mid-text
+     in a narrow flex slot. Letting buttons shrink-to-fit their content keeps
+     the «添加 X» pattern readable. */
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.gp-add-provider-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-3);
+}
+.gp-add-provider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.gp-add-provider-row__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+.gp-add-provider-row__hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  line-height: 1.5;
+}
+.gp-add-provider-row__error {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gp-danger, #c0392b);
+}
+
+.gp-form-error-banner {
+  margin-top: var(--gp-space-2);
+  padding: var(--gp-space-2) var(--gp-space-3);
+  background: var(--gp-surface-soft, #fff5f5);
+  border: 1px solid var(--gp-danger, #c0392b);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--gp-danger, #c0392b);
+  line-height: 1.5;
+}
+
+/* ─── Model chips editor ───────────────────────────────────────────────── */
+/* Tag-list editor for Provider 「可用模型」 field (builtin + custom rows) and
+   the Add-OpenAI-compat modal's models slot. Each model is a distinct pill;
+   the trailing slot is a dashed «+ 添加模型» input so the "create a new tag"
+   affordance is unambiguous. The container itself has no border / background
+   — earlier "looks like a single input" wrapper confused users into thinking
+   they had to type comma-separated text. */
+
+.gp-model-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  padding: 0;
+  background: transparent;
+}
+.gp-model-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  background: var(--gp-surface-soft, #f1f1f1);
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+}
+.gp-model-row:hover {
+  border-color: var(--gp-ink-faint, #888);
+}
+.gp-model-row__id {
+  flex: 1 1 auto;
+  min-width: 120px;
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+}
+.gp-model-row__id:focus {
+  outline: none;
+}
+.gp-model-row__embed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  cursor: pointer;
+  user-select: none;
+}
+.gp-model-row__embed-label {
+  font-size: 12px;
+  color: var(--gp-ink-faint);
+  white-space: nowrap;
+}
+.gp-model-row__remove {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0 6px;
+  margin: 0;
+  color: var(--gp-ink-faint);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.gp-model-row__remove:hover {
+  color: var(--gp-danger, #c0392b);
+  background: rgba(192, 57, 43, 0.08);
+}
+.gp-model-rows__add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px dashed var(--gp-border);
+  border-radius: 6px;
+}
+.gp-model-rows__add:focus-within {
+  border-style: solid;
+  border-color: var(--gp-ink);
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.06);
+}
+.gp-model-rows__add-icon {
+  color: var(--gp-ink-faint);
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 500;
+  user-select: none;
+}
+.gp-model-rows__input {
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  flex: 1 1 auto;
+  min-width: 80px;
+  padding: 2px 0;
+  font: inherit;
+  font-family: var(--gp-font-mono);
+  font-size: 12px;
+  color: var(--gp-ink);
+}
+.gp-model-rows__input::placeholder {
+  color: var(--gp-ink-faint);
+  opacity: 0.7;
+}
+
+.gp-tutorial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-4);
+}
+.gp-tutorial__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+.gp-tutorial__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+.gp-tutorial__body {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--gp-ink-faint);
+  line-height: 1.55;
+}
+.gp-tutorial__reference {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+}
+.gp-tutorial__reference > code {
+  font-family: var(--gp-font-mono);
+  font-size: 11px;
+  background: var(--gp-surface-soft, #f7f7f7);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.gp-tutorial__code {
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--gp-surface-soft, #fafafa);
+}
+.gp-tutorial__code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--gp-border);
+  background: var(--gp-surface, #fff);
+}
+.gp-tutorial__code-lang {
+  font-family: var(--gp-font-mono);
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gp-tutorial__code-pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow: auto;
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--gp-ink);
+  white-space: pre;
+}
+.gp-tutorial__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--gp-space-2);
+}
+
+/* ─── Search tools list ────────────────────────────────────────────────── */
+
+.gp-tool-list {
+  padding: 4px 0;
+}
+.gp-tool-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 100px auto;
+  gap: var(--gp-space-3);
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+  align-items: center;
+}
+.gp-tool-row:last-child {
+  border-bottom: 0;
+}
+.gp-tool-row__order {
+  font-family: var(--gp-font-mono);
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  text-align: center;
+}
+.gp-tool-row__info {
+  min-width: 0;
+}
+.gp-tool-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+.gp-tool-row__sub {
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  margin-top: 2px;
+}
+.gp-tool-row__status {
+  font-size: 11.5px;
+  color: var(--gp-ink-muted);
+  font-family: var(--gp-font-mono);
+}
+.gp-tool-row__status--ok::before {
+  content: "●";
+  color: var(--gp-accent-success-ink);
+  margin-right: 5px;
+  font-size: 9px;
+}
+.gp-tool-row__status--off::before {
+  content: "○";
+  color: var(--gp-ink-faint);
+  margin-right: 5px;
+  font-size: 9px;
+}
+.gp-tool-row__actions {
+  display: flex;
+  gap: var(--gp-space-1);
+  align-items: center;
+}
+
+.gp-stat-row {
+  display: flex;
+  gap: var(--gp-space-6);
+  flex-wrap: wrap;
+}
+.gp-stat-cell__num {
+  font-family: var(--gp-font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+.gp-stat-cell__lbl {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+}
+
+.gp-mono-ink {
+  font-family: var(--gp-font-mono);
+  color: var(--gp-ink);
+}
+.gp-mono {
+  font-family: var(--gp-font-mono);
+}
+.gp-mono--accent {
+  color: var(--gp-warn-accent-ink);
+}
+
+/* ─── Status indicator ─────────────────────────────────────────────────── */
+
+.gp-sstatus {
+  font-size: 11.5px;
+  font-family: var(--gp-font-mono);
+}
+.gp-sstatus--ok {
+  color: var(--gp-accent-success-ink);
+}
+
+/* ─── Channel tabs ─────────────────────────────────────────────────────── */
+
+.gp-channel-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-channel-tab {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 10px 14px;
+  background: transparent;
+  border: 0;
+  color: var(--gp-ink-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gp-channel-tab:hover {
+  color: var(--gp-ink);
+}
+.gp-channel-tab[aria-pressed="true"],
+.gp-channel-tab[aria-selected="true"] {
+  color: var(--gp-ink);
+  font-weight: 600;
+  border-bottom-color: var(--gp-ink);
+}
+.gp-channel-tab--mute {
+  color: var(--gp-ink-faint);
+}
+.gp-channel-tab--mute:hover {
+  color: var(--gp-ink-muted);
+}
+.gp-channel-tab__count {
+  font-size: 10.5px;
+  color: var(--gp-ink-faint);
+  font-family: var(--gp-font-mono);
+}
+
+/* LLM settings: tab strip is separate from cards below (no shared card chrome) */
+.gp-llm-tab-bar {
+  margin-top: 18px;
+}
+
+/* Cancel digest-style horizontal inset: those tabs live inside .gp-scard; here the strip
+   sits in .gp-smain next to .gp-scard, so match .gp-scard__head title inset
+   (18px = 4px + .gp-channel-tab horizontal padding 14px). */
+.gp-llm-tab-bar .gp-channel-tabs {
+  padding-left: 4px;
+  padding-right: 18px;
+}
+
+.gp-scard--digest {
+  position: relative;
+}
+
+/* ─── Preset cards ─────────────────────────────────────────────────────── */
+
+.gp-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+.gp-preset-card-wrap {
+  position: relative;
+  /* flex on the wrap so the inner <button> stretches to the grid track height,
+     keeping foot's `margin-top: auto` pinning when card heights differ in a
+     row. Without this, button defaults to content-height and foot floats up. */
+  display: flex;
+}
+.gp-preset-card {
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 10px;
+  padding: var(--gp-space-4);
+  cursor: pointer;
+  width: 100%;
+  flex: 1;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s,
+    transform 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-3);
+  font: inherit;
+  text-align: left;
+  color: var(--gp-ink);
+}
+.gp-preset-card:hover {
+  border-color: var(--gp-border-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+.gp-preset-card--default {
+  border-color: var(--gp-ink);
+  box-shadow: 0 0 0 1px var(--gp-ink);
+}
+.gp-preset-card--active {
+  border-color: var(--gp-ink);
+  box-shadow: 0 0 0 2px var(--gp-ink);
+}
+.gp-preset-card--new {
+  border-style: dashed;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--gp-ink-muted);
+}
+.gp-preset-card--new:hover {
+  background: var(--gp-hover-bg);
+  border-color: var(--gp-ink);
+  color: var(--gp-ink);
+}
+.gp-preset-card--new__plus {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+.gp-preset-card--new__title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.gp-preset-card--new__sub {
+  font-size: 11.5px;
+  margin-top: 4px;
+  color: var(--gp-ink-faint);
+}
+.gp-preset-card__head {
+  /* right-pad reserves space for the absolute-positioned menu wrap (32px trigger
+     + safe gap), so long preset names don't overlap the ⋯ menu button. */
+  padding-right: 36px;
+}
+.gp-preset-card__name {
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-family: var(--gp-font-mono);
+}
+.gp-preset-card__period {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  margin-top: 3px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.gp-preset-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 5px;
+}
+.gp-preset-card__chip {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--gp-surface-raised);
+  color: var(--gp-ink-muted);
+  border: 1px solid transparent;
+}
+.gp-preset-card__chip--active {
+  background: var(--gp-ink);
+  color: var(--gp-on-ink);
+}
+.gp-preset-card__chip--off {
+  color: var(--gp-ink-faint);
+  text-decoration: line-through;
+}
+.gp-preset-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  border-top: 1px solid var(--gp-border);
+  padding-top: 10px;
+  margin-top: auto;
+}
+.gp-preset-card__menu-wrap {
+  position: absolute;
+  top: var(--gp-space-4);
+  right: var(--gp-space-4);
+}
+.gp-preset-card__preview {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  animation: gp-preset-preview-in 0.12s ease-out;
+}
+.gp-preset-preview--floating {
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border-strong);
+  /* 双层阴影：近距离锐边定义浮层边缘 + 远距离弥散给"飘起来"的层次。之前单层
+     0 14px 32px / 0.14 在浅色主背景里跟卡片几乎贴合,看不出 elevation。比通用
+     popover token (0 8/24/0.12) 重一档,因为 preview 体积大、要从底下的预设网格
+     主背景剥离;比 modal (0 20/60/0.3) 轻,毕竟它只是 hover 浮层不该抢主视觉。*/
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 18px 40px rgba(0, 0, 0, 0.18);
+  padding: 12px 14px;
+}
+@keyframes gp-preset-preview-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.gp-preset-card__menu-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+.gp-preset-card__menu {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 7px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  z-index: 6;
+  min-width: 140px;
+  padding: var(--gp-space-1);
+  font-size: 12.5px;
+}
+.gp-preset-card__menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  font: inherit;
+  color: var(--gp-ink);
+}
+.gp-preset-card__menu-item:hover {
+  background: var(--gp-hover-bg);
+}
+.gp-preset-card__menu-item--danger {
+  color: var(--gp-danger);
+}
+
+/* ─── Drawer (preset edit) ─────────────────────────────────────────────── */
+
+.gp-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  z-index: 40;
+  border: 0;
+  cursor: pointer;
+  animation: gp-fade-in 0.2s;
+}
+.gp-drawer {
+  position: fixed;
+  top: var(--gp-topnav-h);
+  right: 0;
+  bottom: 0;
+  width: 480px;
+  max-width: 100vw;
+  background: var(--gp-surface);
+  border-left: 1px solid var(--gp-border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  z-index: 41;
+  animation: gp-drawer-in 0.22s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.gp-drawer__head {
+  padding: 16px 22px 14px;
+  border-bottom: 1px solid var(--gp-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.gp-drawer__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--gp-ink);
+}
+.gp-drawer__meta {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  margin: 2px 0 0;
+  font-family: var(--gp-font-mono);
+}
+.gp-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-4);
+}
+.gp-drawer__foot {
+  padding: 12px 22px;
+  border-top: 1px solid var(--gp-border);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  background: var(--gp-bg);
+  align-items: center;
+}
+.gp-drawer__foot-spacer {
+  flex: 1;
+}
+
+.gp-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gp-form-row__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+.gp-form-row__hint {
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  margin-top: -2px;
+}
+.gp-form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gp-space-3);
+}
+
+/* ─── Slot picker rows (drag-to-reorder) ───────────────────────────────── */
+
+.gp-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.gp-slot-chip {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  background: var(--gp-surface);
+  color: var(--gp-ink-muted);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease,
+    opacity 0.12s ease;
+}
+.gp-slot-chip:hover {
+  border-color: var(--gp-border-strong);
+  color: var(--gp-ink);
+}
+.gp-slot-chip[data-on="1"] {
+  background: var(--gp-ink);
+  color: var(--gp-on-ink);
+  border-color: var(--gp-ink);
+  cursor: grab;
+}
+.gp-slot-chip[data-on="1"]:active {
+  cursor: grabbing;
+}
+.gp-slot-chip[data-dragging="1"] {
+  opacity: 0.4;
+}
+.gp-slot-chip[data-drop-target="1"] {
+  box-shadow: inset 0 -2px 0 0 var(--gp-on-ink);
+}
+.gp-slot-chip__handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gp-ink-faint);
+}
+.gp-slot-chip[data-on="1"] .gp-slot-chip__handle {
+  color: rgba(255, 255, 255, 0.55);
+}
+.gp-slot-chip__label {
+  font-size: 13px;
+  line-height: 1.2;
+}
+.gp-slot-chip__order {
+  font-size: 10px;
+  font-family: var(--gp-font-mono);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 1px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+.gp-slot-chip__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gp-ink-faint);
+}
+.gp-slot-chip[data-on="0"]:hover .gp-slot-chip__add {
+  color: var(--gp-ink);
+}
+
+.gp-behavior-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+  margin-top: 4px;
+}
+.gp-behavior-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--gp-ink);
+}
+.gp-behavior-row__hint {
+  color: var(--gp-ink-faint);
+  font-size: 11.5px;
+}
+
+/* ─── Preset preview ───────────────────────────────────────────────────── */
+
+.gp-preset-preview {
+  background: var(--gp-bg);
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.gp-preset-preview__head {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gp-ink-faint);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.gp-preset-preview__section {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--gp-border);
+  font-size: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.gp-preset-preview__section:last-child {
+  border-bottom: 0;
+}
+.gp-preset-preview__section-label {
+  font-weight: 600;
+  color: var(--gp-ink);
+  width: 80px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+}
+.gp-preset-preview__section-body {
+  color: var(--gp-ink-muted);
+  flex: 1;
+}
+.gp-preset-preview__section--off {
+  opacity: 0.4;
+}
+.gp-preset-preview__empty {
+  padding: 14px 0;
+  text-align: center;
+  color: var(--gp-ink-faint);
+  font-size: 12px;
+}
+
+/* ─── Disabled (digest) card ───────────────────────────────────────────── */
+
+/* ─── About grid ───────────────────────────────────────────────────────── */
+
+.gp-about-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--gp-border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+@media (min-width: 768px) {
+  .gp-about-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.gp-about-cell {
+  background: var(--gp-surface);
+  padding: 14px 16px;
+}
+.gp-about-cell__label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gp-ink-faint);
+  margin-bottom: 4px;
+}
+.gp-about-cell__value {
+  font-size: 13px;
+  font-family: var(--gp-font-mono);
+  color: var(--gp-ink);
+}
+
+.gp-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gp-accent-success-ink);
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.6);
+  animation: gp-pulse 1.6s infinite;
+  margin-right: 6px;
+}
+
+/* Modal moved to primitives/modal.css (Phase C review fix v3 — gp-smodal* → gp-modal*). */
+
+/* ─── Segmented ────────────────────────────────────────────────────────── */
+
+.gp-segmented {
+  display: inline-flex;
+  gap: var(--gp-space-1);
+  padding: 2px;
+  background: var(--gp-surface-raised);
+  border-radius: 7px;
+}
+.gp-segmented__btn {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gp-ink-muted);
+}
+.gp-segmented__btn[aria-pressed="true"] {
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+/* Dark mode: surface (#111) is darker than raised (#1c1c1e) container, so
+   the light-mode "active button is brighter than container" rule inverts —
+   the active pill would otherwise read as a recessed dark slot the same
+   shade as the card behind it. Use hover-bg (#27272a) so it sits *above*
+   the container, and replace the black-tinted shadow (invisible at this
+   contrast) with a soft inset white highlight. */
+[data-theme="dark"] .gp-segmented__btn[aria-pressed="true"] {
+  background: var(--gp-hover-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Per-group save bar (sticky bottom) ───────────────────────────────── */
+
+.gp-settings__save-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  background: var(--gp-bg);
+  border-top: 1px solid var(--gp-border);
+  /* Sticky-bottom + hidden state collapses to 1px so the bar floats over
+     content without taking layout space when no group is dirty. The bar
+     overlays content at the bottom of the viewport rather than reflowing
+     it, so transition between states does not shift main content above. */
+  min-height: 1px;
+}
+.gp-settings__save-bar[data-visible="false"] {
+  border-top-color: transparent;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* ─── Feishu chat picker (transient list shown after「获取」) ────────────── */
+
+.gp-feishu-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.gp-feishu-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  background: var(--gp-surface);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.gp-feishu-picker__item:hover {
+  border-color: var(--gp-ink);
+  background: var(--gp-bg);
+}
+.gp-feishu-picker__name {
+  flex: 1;
+  color: var(--gp-ink);
+  font-weight: 500;
+}
+.gp-feishu-picker__badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--gp-bg);
+  border: 1px solid var(--gp-border);
+  font-size: 11px;
+  color: var(--gp-ink-muted);
+}
+.gp-feishu-picker__id {
+  color: var(--gp-ink-muted);
+  font-family: var(--gp-font-mono);
+  font-size: 11px;
+}
+
+/* ─── Restart-prompt modal (post-commit pending-restart confirmation) ───
+ *
+ * Body content rendered inside the shared `.gp-modal` primitive. The keys
+ * list is a mono code block on a raised neutral surface so users can read
+ * env-key strings verbatim; the dual-process warning uses the amber badge
+ * palette to flag that a server-side restart alone is not enough. Actions
+ * row is a flex tail aligned right, matching the modal action conventions
+ * used elsewhere (confirm-modal etc.).
+ */
+/* Restart-required setting list inside RestartPrompt. Each row carries the
+ * user-facing label (pulled from `settings.restart_prompt.key_labels` via raw
+ * dict lookup in the component). When a label is missing — fresh env key the
+ * dict hasn't covered yet — the row falls back to an inline `<code>` chip with
+ * the raw env key so the user still has a stable identifier to grep. No outer
+ * raised panel because Modal body already provides the contained surface. */
+.gp-restart-prompt__keys {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: disc;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gp-ink);
+}
+.gp-restart-prompt__keys-label {
+  font-weight: 500;
+}
+.gp-restart-prompt__keys code {
+  font-family: var(--gp-font-mono);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--gp-surface-raised);
+  color: var(--gp-ink);
+  display: inline-block;
+}
+.gp-restart-prompt__dual-warn {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--gp-badge-amber-bg);
+  color: var(--gp-badge-amber-ink);
+  border: 1px solid var(--gp-badge-amber-border);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Pending-restart banner — occupies the SaveBar slot when no dirty edits are
+ * pending. Visually identical to `.gp-settings__save-bar` (same sticky-bottom
+ * placement, neutral background, top border, right-aligned button), with a
+ * left-aligned status line added so the user reads it as "the action area is
+ * still here, the next action just changed from 'save' to 'restart'" instead
+ * of a separate amber widget that doesn't belong to the same flow. */
+.gp-restart-pending-banner {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  background: var(--gp-bg);
+  border-top: 1px solid var(--gp-border);
+  animation: gp-fade-in 0.15s;
+}
+.gp-restart-pending-banner__msg {
+  margin-right: auto;
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  line-height: 1.45;
+}
+
+/* ─── First-save informational dialog ────────────────────────────────────
+ *
+ * One-shot Modal shown the first time a user successfully saves settings
+ * after PR2 introduced "writes go to DB, not .env". Single-button footer
+ * — same flex-end alignment as restart-prompt for visual consistency.
+ */
+.gp-first-save__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ─── Account / 登录密码 编辑态 (settings → account) ───────────────────
+ *
+ * Edit mode renders the password + confirm fields stacked inside the
+ * SettingsField value slot (the parent uses `stack` so trail goes vertical).
+ * Sub-label sits between the two inputs; inline-error spans appear right
+ * below the field that failed validation.
+ */
+.gp-account-pwd-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+}
+.gp-account-pwd-edit__sublabel {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+.gp-account-pwd-edit__error {
+  font-size: 12px;
+  color: var(--gp-danger);
+}
+
+/* ─── Plugin meta strip + collapsible setup guide ───────────────────────── */
+/* Mounted at the top of `.gp-search-engine-block` (and any future plugin
+   card that adopts the generic contribution UI). Meta strip is always
+   visible above the field rows; setup guide is a <details> that the user
+   expands when they need step-by-step setup help. */
+
+.gp-plugin-meta__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.gp-plugin-meta__trailing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.gp-plugin-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-plugin-meta__primary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.gp-plugin-meta__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gp-ink);
+  margin: 0;
+}
+.gp-plugin-meta__version {
+  font-size: 11px;
+  color: var(--gp-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.gp-plugin-meta__description {
+  font-size: 12px;
+  color: var(--gp-ink);
+  margin: 0;
+}
+.gp-plugin-meta__homepage {
+  font-size: 11px;
+  color: var(--gp-accent);
+  text-decoration: none;
+}
+.gp-plugin-meta__homepage:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Inline enable toggle (PluginMeta.trailing) ---------- */
+/* Used when the plugin's enable toggle is collapsed into the meta row so
+ * the disabled plugin reads as a single line (branding + toggle). The
+ * reset button stays inline so users can clear an override without
+ * expanding the body. Visually mirrors the right-aligned value+control of
+ * a SettingsField row without the row chrome. */
+.gp-plugin-enable-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gp-plugin-enable-inline__status {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.gp-plugin-enable-inline__reset {
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  color: var(--gp-ink-muted);
+  cursor: pointer;
+}
+.gp-plugin-enable-inline__reset:hover:not(:disabled) {
+  border-color: var(--gp-accent);
+  color: var(--gp-accent);
+}
+.gp-plugin-enable-inline__reset:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.gp-search-engine-block__usage {
+  padding: 6px 16px 0;
+}
+
+.gp-plugin-setup-guide {
+  padding: 8px 16px;
+}
+.gp-plugin-setup-guide__summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gp-accent);
+  padding: 4px 0;
+  user-select: none;
+}
+.gp-plugin-setup-guide__summary:hover {
+  text-decoration: underline;
+}
+.gp-plugin-setup-guide__steps {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gp-plugin-setup-guide__step {
+  font-size: 12px;
+}
+.gp-plugin-setup-guide__step-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+.gp-plugin-setup-guide__step-desc {
+  margin: 0;
+  color: var(--gp-ink);
+}
+.gp-plugin-setup-guide__images {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.gp-plugin-setup-guide__image {
+  max-width: 100%;
+  border-radius: 4px;
+  border: 1px solid var(--gp-border);
+}
+.gp-plugin-setup-guide__link {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--gp-accent);
+}
+.gp-plugin-setup-guide__code {
+  margin-top: 6px;
+  padding: 8px;
+  background: var(--gp-surface-raised);
+  border-radius: 4px;
+  font-size: 11px;
+  overflow-x: auto;
+}
+.gp-plugin-setup-guide__done {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  font-style: italic;
+}
+
+/* ---------- Plugin-level notices ---------- */
+/* Plugin-author-declared callouts rendered above the enable toggle. Tuned to
+ * the settings page rhythm — smaller padding / font than the standalone
+ * `.gp-track-warn` banner so multiple notices stack without dominating the
+ * card. Strong left accent + chip-style icon keep the alert legible at this
+ * compact size. `warn` uses the opinion-accent palette (caveat — read first);
+ * `info` uses the accent palette (neutral context). */
+.gp-plugin-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 2px;
+}
+.gp-plugin-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px 7px 8px;
+  border-radius: var(--gp-radius-sm);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.gp-plugin-notice--warn {
+  background: var(--gp-track-warn-bg);
+  border: 1px solid var(--gp-track-warn-border);
+  border-left: 3px solid var(--gp-opinion-accent);
+  color: var(--gp-track-warn-ink);
+}
+.gp-plugin-notice--info {
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-left: 3px solid var(--gp-accent);
+  color: var(--gp-ink-muted);
+}
+.gp-plugin-notice__icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--gp-on-accent);
+  line-height: 1;
+}
+.gp-plugin-notice--warn .gp-plugin-notice__icon {
+  background: var(--gp-opinion-accent);
+}
+.gp-plugin-notice--info .gp-plugin-notice__icon {
+  background: var(--gp-accent);
+}
+.gp-plugin-notice__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Inline status indicator next to field control. Driven by useFieldCommit
+   hooks — 4 distinct states surfaced via [data-state] attribute. */
+.gp-field__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  /* saving/saved labels are short; nowrap keeps the row tidy. */
+  white-space: nowrap;
+}
+.gp-field__status[data-state="saving"] {
+  color: var(--gp-ink-muted, #6b7280);
+}
+.gp-field__status[data-state="saved"] {
+  color: var(--gp-success-ink, #059669);
+  animation: gp-field-status-fade 2.5s ease-out forwards;
+}
+.gp-field__status[data-state="pending-restart"] {
+  color: var(--gp-warn-accent-ink, #d97706);
+  /* "Saved · restart to take effect · baseline diverged" can run long,
+     especially with translated baseline-source enumeration; let it wrap
+     instead of overflowing the field trail on narrow viewports. */
+  white-space: normal;
+  max-width: 32ch;
+}
+.gp-field__status[data-state="error"] {
+  color: var(--gp-danger, #dc2626);
+  font-weight: 600;
+  /* Server-supplied error messages are arbitrarily long. Same wrap policy
+     as pending-restart so the user can read the full reason. */
+  white-space: normal;
+  max-width: 32ch;
+}
+/* NOTE: To replay this fade on each save attempt, FieldStatus (Task 2) must
+   remount via a changing React `key` (e.g. saveAttemptId) — CSS won't auto-
+   restart the animation if data-state="saved" reappears on the same element. */
+@keyframes gp-field-status-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

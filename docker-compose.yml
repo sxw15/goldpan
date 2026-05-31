@@ -1,0 +1,97 @@
+services:
+  # =====================================================================
+  # Two deployment modes:
+  #
+  #   All-in-one:  docker compose up goldpan
+  #   Split mode:  docker compose --profile split up
+  #
+  # Every service belongs to a profile, so bare `docker compose up`
+  # (without --profile) starts nothing — always specify a profile or
+  # a service name explicitly.
+  # =====================================================================
+
+  # All-in-one mode: server + web in a single container (via entrypoint script)
+  goldpan:
+    build: .
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+      # UI / onboarding writes runtime overrides to ./data/goldpan.db, not .env.
+      # Keep .env as a deployment baseline via env_file below; a bind mount is
+      # optional and can be read-only if you want to inspect it inside the image.
+      # - ./.env:/app/.env:ro
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    profiles:
+      - all-in-one
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # --- Split mode: run web and server as separate containers ---
+
+  # Server: runs pipeline worker + REST API
+  goldpan-worker:
+    build: .
+    command: ["node", "server/dist/main.js"]
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    profiles:
+      - split
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      # bootstrap() runs migrations + optional embedding backfill + plugin init
+      # before listening; align with Dockerfile HEALTHCHECK and entrypoint timeout.
+      start_period: 120s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Web: serves UI, proxies /api/* to the worker at request time via middleware
+  goldpan-web:
+    build: .
+    command: ["node", "apps/web/server.js"]
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - GOLDPAN_SERVER_URL=http://goldpan-worker:3001
+    restart: unless-stopped
+    profiles:
+      - split
+    depends_on:
+      goldpan-worker:
+        condition: service_healthy
+    healthcheck:
+      # /api/healthz is whitelisted by middleware (bypasses cookie auth) and
+      # served by the web app's own filesystem route, so it doesn't depend on
+      # the worker — the goldpan-web container reports healthy as long as the
+      # Next.js process can serve a request.
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M

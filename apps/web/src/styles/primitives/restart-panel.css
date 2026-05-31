@@ -1,0 +1,113 @@
+/* primitives/restart-panel.css
+ *
+ * Surface for the shared `<RestartPanel>` component (used by both the
+ * onboarding "complete" page and the settings "about" page). Lighter than
+ * `.gp-scard` so the primary CTA / instruction list inside reads as the
+ * focal element while still framing it as a contained surface. Same border
+ * / surface tokens as `.gp-scard` for visual consistency. */
+
+.gp-restart-panel {
+  border: 1px solid var(--gp-border);
+  background: var(--gp-surface);
+  border-radius: var(--gp-radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.gp-restart-panel__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+
+.gp-restart-panel__body {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.55;
+}
+
+.gp-restart-panel__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+}
+
+.gp-restart-panel__action {
+  margin-top: 0.5rem;
+}
+
+.gp-restart-panel__status {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-restart-panel__status--error {
+  color: var(--gp-danger);
+}
+
+/* Numbered "do these in your terminal" list inside ManualRestartPanel. The
+   `<ol>` default counter renders the 1./2. — we just style spacing. */
+.gp-restart-panel__steps {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--gp-ink);
+  line-height: 1.55;
+}
+
+.gp-restart-panel__steps > li > span {
+  display: inline-block;
+  margin-bottom: 0.375rem;
+}
+
+/* Command pill: monospace command + small "copy" button. surface-raised + a
+   thin border keeps it visually distinct from prose without competing with
+   the panel border. */
+.gp-restart-panel__cmd {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 0.75rem;
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+}
+
+.gp-restart-panel__cmd-code {
+  font-family: var(--gp-font-mono);
+  font-size: 0.8125rem;
+  color: var(--gp-ink);
+}
+
+.gp-restart-panel__cmd-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  transition: var(--gp-transition);
+}
+
+.gp-restart-panel__cmd-copy:hover {
+  color: var(--gp-ink);
+  border-color: var(--gp-ink-muted);
+}
+
+.gp-restart-panel__cmd-copy:focus-visible {
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+}

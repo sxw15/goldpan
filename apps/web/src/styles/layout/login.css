@@ -1,0 +1,47 @@
+/* Login page (only mounted when GOLDPAN_AUTH_PASSWORD is set). */
+
+.gp-login {
+  max-width: 400px;
+  margin: 2rem auto;
+}
+
+.gp-login__field {
+  margin-bottom: 1rem;
+}
+
+.gp-login__label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.gp-login__input {
+  width: 100%;
+  padding: var(--gp-space-2);
+  border: 1px solid var(--gp-border);
+  border-radius: 4px;
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+}
+
+.gp-login__error {
+  color: var(--gp-danger);
+  margin-bottom: 0.5rem;
+}
+
+.gp-login__submit {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid var(--gp-border);
+  background: var(--gp-accent);
+  color: var(--gp-on-accent);
+}
+
+.gp-login__submit:hover {
+  opacity: 0.9;
+}
+
+.gp-login__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

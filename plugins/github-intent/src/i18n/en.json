@@ -1,0 +1,9 @@
+{
+  "github.refresh.started": "✅ Refreshing ${owner}/${repo}…",
+  "github.refresh.in_progress": "⏳ ${owner}/${repo} is already being refreshed.",
+  "github.refresh.too_recent": "⏱️ Just checked ${owner}/${repo} — projects rarely change that fast. Try again in ${seconds}s.",
+  "github.refresh.rate_limited": "🚦 GitHub API rate limit reached. Resets at ${resetsAt}.",
+  "github.refresh.not_found": "❌ Repo ${owner}/${repo} not found or private.",
+  "github.refresh.archived": "📦 ${owner}/${repo} is archived — no further updates expected.",
+  "github.refresh.parser_failed": "Which GitHub repo? Please tell me as `owner/repo`."
+}

@@ -1,0 +1,32 @@
+{
+  "input_empty": "Your message is empty.",
+  "text_too_long": "Your message is too long (max ${maxLen} characters).",
+  "query_too_long": "Your question is too long (max ${maxLen} characters).",
+  "input_too_long_for_intent": "Your message is too long for this kind of request (max ${maxLen} characters).",
+  "intent_failed": "Sorry, I couldn't understand your message.",
+  "submit_failed": "Sorry, I couldn't save that — please try again.",
+  "query_failed": "Sorry, I couldn't answer that — please try again.",
+  "unknown_intent": "Sorry, I don't know how to handle that yet.",
+  "plugin_error": "An internal handler failed. Please try again later.",
+  "unknown": "Internal error: ${message}",
+
+  "submit.accepted": "✅ Accepted (task #${taskId})",
+  "submit.accepted_with_urls": "✅ Accepted (task #${taskId}) — ${urlCount} URLs",
+  "submit.duplicate": "ℹ️ Already saved (source #${existingSourceId})",
+
+  "submit_reject.input_empty": "Your message is empty.",
+  "submit_reject.text_too_short": "That text is too short to save (min 4 chars).",
+  "submit_reject.text_too_long": "That text is too long to save (max ${maxLen} chars).",
+  "submit_reject.url_blocked": "I can't fetch that URL — it points to a blocked address.",
+  "submit_reject.url_invalid": "That doesn't look like a valid URL.",
+  "submit_reject.unknown": "I couldn't save that — please try again.",
+
+  "query.confidence_label": "Confidence",
+  "query.sources_heading": "Sources",
+
+  "filter.unsupported_content": "I currently only handle text messages.",
+
+  "callback.expired": "That option is no longer available.",
+  "callback.tracking_resolve_web_only": "Open the web UI to resolve the subject of this tracking rule — IM doesn't yet support this option.",
+  "render.unsupported_result_type": "Internal error: unsupported result type \"${type}\"."
+}

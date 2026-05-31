@@ -1,0 +1,9 @@
+{
+  "github.refresh.started": "✅ 已开始重新分析 ${owner}/${repo}…",
+  "github.refresh.in_progress": "⏳ ${owner}/${repo} 正在分析中。",
+  "github.refresh.too_recent": "⏱️ 刚检查过 ${owner}/${repo}，开源项目极少在这么短时间内有新内容，请 ${seconds} 秒后再试。",
+  "github.refresh.rate_limited": "🚦 GitHub API 配额已用完，${resetsAt} 后恢复。",
+  "github.refresh.not_found": "❌ 找不到仓库 ${owner}/${repo}（可能不存在或为私有）。",
+  "github.refresh.archived": "📦 ${owner}/${repo} 已归档，不会再有更新。",
+  "github.refresh.parser_failed": "请告诉我具体的 GitHub 仓库，格式 `owner/repo`。"
+}

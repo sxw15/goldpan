@@ -1,0 +1,31 @@
+{
+  "name": "@goldpan/plugin-tracking",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "pretest": "node ../../scripts/ensure-built.mjs @goldpan/core",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "zod": "^4.3.0",
+    "handlebars": "^4.7.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.15.0",
+    "better-sqlite3": "^12.8.0",
+    "tslog": "^4.9.3",
+    "typescript": "^5.8.0",
+    "vitest": "^4.0.0"
+  }
+}

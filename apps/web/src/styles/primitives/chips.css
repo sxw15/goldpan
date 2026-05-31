@@ -1,0 +1,143 @@
+/* Chip primitives — single .gp-chip + [data-variant] (Phase B7 收口).
+   - default: pill 999px (chat default chips, action shortcuts)
+   - cite:    rounded-rect 6px, label + name 双段 (query result / note 引用)
+   - entity:  square-ish 4px, uppercase __type prefix (task entity list)
+   - + [data-state=new] on entity: green tint */
+
+.gp-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gp-chip {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 9px;
+  border: 1px solid var(--gp-border, #eaeaea);
+  border-radius: 999px;
+  background: var(--gp-surface, #fff);
+  color: var(--gp-ink, #111);
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  text-decoration: none;
+  transition: var(--gp-transition);
+}
+
+button.gp-chip,
+a.gp-chip {
+  cursor: pointer;
+}
+
+.gp-chip:hover {
+  border-color: var(--gp-border-strong, #ccc);
+  background: var(--gp-hover-bg, #f0f0f0);
+}
+
+.gp-chip__count {
+  font-size: 10px;
+  color: var(--gp-ink-faint, #999);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── variant: cite (query result / note 引用) ─────────────────────────── */
+
+.gp-chip[data-variant="cite"] {
+  gap: 0.4375rem;
+  padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: var(--gp-bg);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.gp-chip[data-variant="cite"]:hover {
+  border-color: var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 6%, var(--gp-bg));
+}
+
+/* ─── variant: entity (task entity list) ───────────────────────────────── */
+
+.gp-chip[data-variant="entity"] {
+  padding: 0.1875rem 0.5625rem;
+  border-radius: 4px;
+  background: var(--gp-bg);
+  font-size: 0.75rem;
+}
+
+.gp-chip[data-variant="entity"]:hover {
+  border-color: var(--gp-accent);
+  background: var(--gp-bg);
+  color: var(--gp-accent);
+}
+
+.gp-chip[data-variant="entity"][data-state="new"] {
+  background: color-mix(in srgb, var(--gp-badge-ok-ink) 8%, transparent);
+  border-color: color-mix(in srgb, var(--gp-badge-ok-ink) 28%, transparent);
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-chip[data-variant="entity"][data-state="new"]:hover {
+  color: var(--gp-badge-ok-ink);
+  background: color-mix(in srgb, var(--gp-badge-ok-ink) 8%, transparent);
+  border-color: color-mix(in srgb, var(--gp-badge-ok-ink) 50%, transparent);
+}
+
+/* ─── shared sub-elements ──────────────────────────────────────────────── */
+
+.gp-chip__type {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-muted);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.gp-chip[data-variant="entity"] .gp-chip__type {
+  font-size: 0.59375rem;
+  letter-spacing: 0.05em;
+  color: var(--gp-ink-faint);
+}
+
+.gp-chip[data-variant="entity"][data-state="new"] .gp-chip__type {
+  color: color-mix(in srgb, var(--gp-badge-ok-ink) 70%, var(--gp-ink-muted));
+}
+
+.gp-chip__name {
+  color: var(--gp-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+.gp-chip__more {
+  align-self: center;
+  font-size: 0.75rem;
+  color: var(--gp-ink-faint);
+}
+
+/* ─── pill-select (legacy form select) ─────────────────────────────────── */
+
+.gp-pill-select {
+  font-size: 12px;
+  color: var(--gp-ink-muted, #666);
+  background: var(--gp-surface, #fff);
+  border: 1px solid var(--gp-border, #eaeaea);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.gp-pill-select:hover {
+  color: var(--gp-ink, #111);
+  border-color: var(--gp-border-strong, #ccc);
+}

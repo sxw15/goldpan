@@ -1,0 +1,68 @@
+/* Bilingual text — pairs translated and original copy on the same surface. */
+/* Used by <BilingualText> wherever the translating pipeline step might have
+ * produced a localized variant of a fact / opinion / description / summary.
+ *
+ * Default render shows translated copy as the main read; a tiny inline button
+ * reveals the original underneath. Keep the toggle subdued — translated text
+ * is the primary signal, the original is a fallback for when readers want to
+ * audit the LLM. */
+
+.gp-bilingual {
+  display: inline;
+}
+
+.gp-bilingual__main {
+  /* No special styling — inherits the parent context's typography so the
+   * component slots cleanly into kp lists, summaries, and entity cards
+   * without forcing a font / size override. */
+}
+
+.gp-bilingual__toggle {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-left: 0.4em;
+  font-size: 0.78em;
+  line-height: 1;
+  color: var(--gp-color-text-muted, #6b7280);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.gp-bilingual__toggle:hover {
+  color: var(--gp-color-text, #111827);
+}
+
+.gp-bilingual__toggle:focus-visible {
+  outline: 2px solid var(--gp-color-focus, #6366f1);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.gp-bilingual__original {
+  display: block;
+  margin-top: 0.35em;
+  padding: 0.4em 0.6em;
+  border-left: 2px solid var(--gp-color-border, #e5e7eb);
+  background: var(--gp-color-surface-muted, rgba(0, 0, 0, 0.025));
+  border-radius: 0 4px 4px 0;
+  font-size: 0.92em;
+  color: var(--gp-color-text-muted, #4b5563);
+  white-space: pre-wrap;
+}
+
+.gp-bilingual__original-label {
+  display: inline-block;
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.5em;
+  color: var(--gp-color-text-muted, #6b7280);
+}
+
+.gp-bilingual__original-text {
+  display: inline;
+}

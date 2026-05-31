@@ -1,0 +1,1734 @@
+/* Inspector overlay (right-side sheet) + payload variants
+   (entity / note / task) + state (loading/error/empty) + entity relationships. */
+
+/* ────────────────────────────────────────────────
+   Inspector overlay (S1: right-side sheet)
+   ──────────────────────────────────────────────── */
+
+.gp-inspector__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--gp-z-inspector);
+  display: flex;
+  justify-content: flex-end;
+  background: var(--gp-overlay-backdrop);
+}
+
+.gp-inspector {
+  width: var(--gp-inspector-width);
+  max-width: 90vw;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gp-surface);
+  border-left: 1px solid var(--gp-border);
+  box-shadow: -8px 0 24px color-mix(in srgb, var(--gp-ink) 8%, transparent);
+}
+
+.gp-inspector__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.gp-inspector__header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+.gp-inspector__back {
+  padding: 0.25rem 0.5rem;
+  margin-left: -0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--gp-ink-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border-radius: var(--gp-radius-sm);
+  transition: var(--gp-transition);
+}
+
+.gp-inspector__back:hover {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+.gp-inspector__close {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--gp-ink-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--gp-radius-sm);
+  transition: var(--gp-transition);
+}
+
+.gp-inspector__close:hover {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+.gp-inspector__header-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-1);
+}
+
+.gp-inspector__kind-badge {
+  align-self: flex-start;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  font-weight: 600;
+}
+
+.gp-inspector__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--gp-ink);
+  overflow-wrap: break-word;
+}
+
+.gp-inspector__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--gp-space-4);
+}
+
+/* === Inspector mobile bottom sheet (S11) === */
+@media (max-width: 767px) {
+  .gp-inspector__backdrop {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+  .gp-inspector {
+    /* Container needs `position: relative` so the ::before grab-handle
+       (position: absolute) anchors to the sheet rather than escaping to backdrop. */
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+    animation: gp-inspector-sheet-in var(--gp-inspector-transition);
+  }
+  .gp-inspector::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--gp-border-strong);
+  }
+  .gp-inspector__body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ────────────────────────────────────────────────
+   Entity payload (S1: Inspector kind=entity)
+   ──────────────────────────────────────────────── */
+
+.gp-entity-payload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-4);
+}
+
+.gp-entity-payload__category {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  color: var(--gp-ink-faint);
+}
+
+.gp-entity-payload__description {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--gp-ink);
+}
+
+.gp-entity-payload__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-entity-payload__section-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  font-weight: 600;
+}
+
+.gp-entity-payload__facts {
+  list-style: disc;
+  padding-left: 1.125rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  color: var(--gp-ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.gp-entity-payload__facts li {
+  margin: 0;
+}
+
+.gp-entity-payload__relations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.gp-entity-payload__relation-chip {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--gp-border);
+  border-radius: 1rem;
+  background: var(--gp-surface);
+  color: var(--gp-accent);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: var(--gp-transition);
+}
+
+.gp-entity-payload__relation-chip:hover {
+  border-color: var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 8%, transparent);
+}
+
+/* === EntityPayload — drawer redesign (prototype parity) === */
+
+.gp-entity-payload__path {
+  font-size: 11px;
+  font-family: var(--gp-font-mono, ui-monospace, monospace);
+  color: var(--gp-ink-faint, #999);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.gp-entity-payload__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gp-entity-payload__actions .gp-entity-payload__track-cta {
+  margin-right: auto;
+}
+.gp-entity-payload__track-error {
+  flex-basis: 100%;
+}
+
+.gp-entity-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--gp-ink, #111);
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--gp-surface-raised, #f3f4f6);
+  border-radius: var(--gp-radius-md, 8px);
+}
+
+.gp-kp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gp-kp-item {
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 7px 10px 7px 22px;
+  border-radius: 4px;
+  position: relative;
+}
+.gp-kp-item::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 13px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gp-border-strong, #ccc);
+}
+.gp-kp-item:hover {
+  background: var(--gp-hover-bg, #f0f0f0);
+}
+.gp-kp-item--opinion {
+  font-style: italic;
+}
+.gp-kp-item--opinion::before {
+  background: #b45309;
+}
+.gp-kp-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--gp-ink-faint, #999);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Long URL break — entity / source payload links */
+.gp-entity-payload__source-item,
+.gp-entity-payload__source-item a,
+.gp-source-view-payload__source-link {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.gp-entity-payload__source-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.gp-entity-payload__source-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Inspector sub-tabs (EntityPayload) */
+.gp-inspector-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--gp-border, #eaeaea);
+  margin: 0;
+  padding: 0;
+}
+.gp-inspector-tabs__tab {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 0;
+  margin-right: 18px;
+  background: transparent;
+  border: none;
+  color: var(--gp-ink-muted, #666);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+}
+.gp-inspector-tabs__tab:hover {
+  color: var(--gp-ink, #111);
+}
+.gp-inspector-tabs__tab[aria-selected="true"] {
+  color: var(--gp-ink, #111);
+  font-weight: 600;
+  border-bottom-color: var(--gp-ink, #111);
+}
+.gp-inspector-tabs__count {
+  font-size: 11px;
+  color: var(--gp-ink-faint, #999);
+  font-variant-numeric: tabular-nums;
+}
+.gp-inspector-tabs__tab[aria-selected="true"] .gp-inspector-tabs__count {
+  color: var(--gp-ink-muted, #666);
+}
+
+/* Tab visibility — toggled via [data-active-tab] on the payload root */
+.gp-entity-payload[data-active-tab="overview"] [data-show-on]:not([data-show-on~="overview"]),
+.gp-entity-payload[data-active-tab="facts"] [data-show-on]:not([data-show-on~="facts"]),
+.gp-entity-payload[data-active-tab="opinions"] [data-show-on]:not([data-show-on~="opinions"]),
+.gp-entity-payload[data-active-tab="relations"] [data-show-on]:not([data-show-on~="relations"]) {
+  display: none;
+}
+
+/* Drawer shell — match prototype (kind badge above title, body padding, sticky header)
+   Override the .gp-inspector__title / __kind-badge declared earlier (cascade order matters). */
+.gp-inspector__title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+.gp-inspector__kind-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint, #999);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ────────────────────────────────────────────────
+   State (Empty / Loading / Error) — shared
+   ──────────────────────────────────────────────── */
+
+.gp-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gp-space-2);
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.gp-state__title {
+  margin: 0;
+  color: var(--gp-ink);
+  font-size: 0.9375rem;
+}
+
+.gp-state__description {
+  margin: 0;
+  color: var(--gp-ink-muted);
+  font-size: 0.875rem;
+}
+
+.gp-state__action {
+  margin-top: 0.5rem;
+}
+
+.gp-state--error .gp-state__title {
+  color: var(--gp-danger);
+}
+
+.gp-state__retry {
+  margin-top: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: var(--gp-transition);
+}
+
+.gp-state__retry:hover {
+  background: var(--gp-hover-bg);
+  border-color: var(--gp-border-strong);
+}
+
+/* ────────────────────────────────────────────────
+   Entity Relationships (Inspector — entity payload relationships block)
+   ──────────────────────────────────────────────── */
+
+.gp-entity-relationships {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.gp-entity-relationships__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gp-space-2);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.gp-entity-relationships__item:last-child {
+  border-bottom: none;
+}
+
+.gp-entity-relationships__direction {
+  color: var(--gp-text-muted);
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.gp-entity-relationships__link {
+  color: var(--gp-link);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.gp-entity-relationships__link:hover {
+  text-decoration: underline;
+}
+
+.gp-entity-relationships__type {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background: var(--gp-bg-subtle);
+  color: var(--gp-text-secondary);
+  flex-shrink: 0;
+}
+
+.gp-entity-relationships__desc {
+  color: var(--gp-text-secondary);
+  font-size: 0.875rem;
+}
+
+/* ────────────────────────────────────────────────
+   Source full-detail payload (Inspector kind=source)
+   ──────────────────────────────────────────────── */
+
+.gp-source-view-payload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-note-entity-group-gap);
+}
+
+.gp-source-view-payload__source-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+  padding-bottom: var(--gp-space-3);
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.gp-source-view-payload__source-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--gp-ink);
+}
+
+.gp-source-view-payload__source-link {
+  color: var(--gp-ink-muted);
+  font-size: 0.8125rem;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.gp-source-view-payload__source-link:hover {
+  color: var(--gp-accent);
+  text-decoration: underline;
+}
+
+.gp-source-view-payload__source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-2) var(--gp-space-3);
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.gp-source-view-payload__meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+.gp-source-view-payload__meta-label {
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+  font-weight: 500;
+}
+
+.gp-source-view-payload__meta-value {
+  color: var(--gp-ink-muted);
+}
+
+.gp-source-view-payload__tags-section,
+.gp-source-view-payload__categories,
+.gp-source-view-payload__knowledge {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-source-view-payload__tags-section h4,
+.gp-source-view-payload__categories h4,
+.gp-source-view-payload__knowledge h4 {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+  font-weight: 600;
+}
+
+.gp-source-view-payload__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-note-tag-chip-gap);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.gp-source-view-payload__tags li {
+  padding: 0.125rem 0.5rem;
+  background: var(--gp-surface-raised);
+  border-radius: var(--gp-radius-sm);
+  font-size: 0.75rem;
+  color: var(--gp-ink);
+}
+
+.gp-source-view-payload__categories ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-1);
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-source-view-payload__entity-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gp-source-view-payload__entity-name {
+  all: unset;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--gp-accent);
+  font-size: 0.875rem;
+}
+
+.gp-source-view-payload__entity-name:hover {
+  text-decoration: underline;
+}
+
+.gp-source-view-payload__points-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.gp-source-view-payload__point--fact,
+.gp-source-view-payload__point--opinion {
+  padding: 0.125rem 0 0.125rem 0.625rem;
+  border-left: 2px solid transparent;
+}
+
+.gp-source-view-payload__point--fact {
+  color: var(--gp-ink);
+  border-left-color: var(--gp-accent);
+}
+
+.gp-source-view-payload__point--opinion {
+  color: var(--gp-ink-muted);
+  font-style: italic;
+  border-left-color: var(--gp-border);
+}
+
+.gp-source-view-payload__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  padding-top: var(--gp-space-2);
+  border-top: 1px solid var(--gp-border);
+}
+
+.gp-source-view-payload__discard-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gp-danger, #dc2626);
+}
+
+/* ────────────────────────────────────────────────
+   Task payload (Inspector kind=task)
+   ──────────────────────────────────────────────── */
+
+.gp-task-payload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-3);
+  padding: var(--gp-space-2);
+}
+
+.gp-task-payload__pipeline-step {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-task-payload__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-1);
+  padding: 0.5rem 0.75rem;
+  background: var(--gp-badge-err-bg);
+  border: 1px solid var(--gp-badge-err-border);
+  border-radius: var(--gp-radius-sm);
+}
+
+.gp-task-payload__error-kind {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-badge-err-ink);
+}
+
+.gp-task-payload__error-message {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-badge-err-ink);
+  font-family: var(--gp-font-mono);
+}
+
+.gp-task-payload__source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-1);
+}
+
+.gp-task-payload__source-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  font-weight: 600;
+}
+
+.gp-task-payload__source a {
+  color: var(--gp-ink-muted);
+  font-size: 0.8125rem;
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.gp-task-payload__source a:hover {
+  color: var(--gp-accent);
+  text-decoration: underline;
+}
+
+.gp-task-payload__fullpage-link {
+  color: var(--gp-accent);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.gp-task-payload__fullpage-link:hover {
+  text-decoration: underline;
+}
+
+/* ── EntityPayload extras (aliases / opinions / sources / github) ─────── */
+
+.gp-entity-payload__aliases,
+.gp-entity-payload__keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-entity-payload-chip-gap);
+  list-style: none;
+  padding: 0;
+}
+
+.gp-entity-payload__opinions {
+  /* optional visual differentiation from facts */
+}
+
+.gp-entity-payload__opinion-item {
+  font-style: italic;
+  color: var(--gp-ink-muted, #666);
+}
+
+.gp-entity-payload__fact-date {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--gp-ink-muted, #666);
+}
+
+.gp-entity-payload__sources {
+  /* inherits section gap */
+}
+
+/*
+ * NOTE: source status badge 直接复用通用 `.gp-source-status-chip` + `--${status}` 这套 BEM
+ * （见上面 SourcesSection / SourcePayload 消费规则），EntityPayload 的 sources 列表里
+ * 渲染 `<span className="gp-source-status-chip gp-source-status-chip--${s.status}">` 即可，
+ * 无需 EntityPayload 自造一套 `__source-status--*` modifier（DRY：spec §9 tokens 表只列 chip 一套）。
+ */
+
+.gp-entity-payload__github {
+  /* condition-rendered container; GithubRepoCard supplies its own styling */
+}
+
+/* ── InterestPayload (v1 — declared before v2 redesign override) ───────── */
+
+.gp-interest-payload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-4);
+}
+
+.gp-interest-payload__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-interest-payload__description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--gp-ink);
+  line-height: 1.55;
+}
+
+.gp-interest-payload__description--empty {
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+
+.gp-interest-payload__queries,
+.gp-interest-form__queries-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-interest-query-chip-gap);
+  align-items: center;
+}
+
+.gp-interest-payload__query-chip {
+  padding: 0.125rem 0.5rem;
+  background: var(--gp-surface-raised);
+  border-radius: var(--gp-radius-sm);
+  font-size: 0.75rem;
+  display: inline-flex;
+  gap: var(--gp-space-1);
+  align-items: center;
+  color: var(--gp-ink);
+}
+
+.gp-interest-payload__frequency {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-interest-payload__status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gp-space-2);
+}
+
+.gp-interest-payload__enable-toggle {
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--gp-border-strong);
+  background: transparent;
+  color: var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  transition: var(--gp-transition);
+}
+
+.gp-interest-payload__enable-toggle[aria-checked="true"] {
+  background: var(--gp-interest-status-done);
+  color: var(--gp-surface);
+  border-color: var(--gp-interest-status-done);
+}
+
+.gp-interest-payload__enable-toggle:hover {
+  border-color: var(--gp-accent);
+}
+
+.gp-interest-status {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--gp-radius-sm);
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+  background: var(--gp-surface-raised);
+}
+
+.gp-interest-status--executing {
+  background: var(--gp-interest-status-running);
+  color: var(--gp-surface);
+}
+
+.gp-interest-payload__last-run,
+.gp-interest-payload__next-run {
+  color: var(--gp-ink-faint);
+  font-size: 0.75rem;
+}
+
+.gp-interest-payload__linked-entities {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gp-interest-payload__linked-entities h4,
+.gp-interest-payload__executions h4 {
+  margin: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  font-weight: 600;
+}
+
+.gp-interest-payload__linked-entities small {
+  color: var(--gp-ink-muted);
+  font-size: 0.75rem;
+}
+
+.gp-interest-payload__entity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.gp-interest-payload__entity-chip {
+  all: unset;
+  cursor: pointer;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid var(--gp-border);
+  border-radius: 1rem;
+  background: var(--gp-surface);
+  color: var(--gp-accent);
+  font-size: 0.8125rem;
+  transition: var(--gp-transition);
+}
+
+.gp-interest-payload__entity-chip:hover {
+  border-color: var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 8%, transparent);
+}
+
+.gp-interest-payload__executions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gp-interest-payload__executions-empty {
+  margin: 0;
+  color: var(--gp-ink-muted);
+  font-size: 0.8125rem;
+}
+
+.gp-interest-payload__execution-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gp-interest-payload__execution-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-2);
+  align-items: center;
+  min-height: var(--gp-interest-execution-row-height);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--gp-border);
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-interest-payload__execution-row:last-child {
+  border-bottom: none;
+}
+
+.gp-interest-payload__execution-status {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--gp-radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--gp-surface);
+}
+
+.gp-interest-payload__execution-status--running {
+  background: var(--gp-interest-status-running);
+}
+
+.gp-interest-payload__execution-status--done {
+  background: var(--gp-interest-status-done);
+}
+
+.gp-interest-payload__execution-status--error {
+  background: var(--gp-interest-status-error);
+}
+
+.gp-interest-payload__execution-date {
+  color: var(--gp-ink-faint);
+}
+
+.gp-interest-payload__execution-error {
+  color: var(--gp-danger);
+  font-style: italic;
+}
+
+.gp-interest-payload__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-2);
+  margin-top: 0.25rem;
+}
+
+.gp-interest-payload__actions button {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--gp-border-strong);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  transition: var(--gp-transition);
+}
+
+.gp-interest-payload__actions button:hover {
+  border-color: var(--gp-accent);
+}
+
+.gp-interest-payload__action-error {
+  width: 100%;
+  margin: 0;
+  color: var(--gp-danger);
+  font-size: 0.8125rem;
+}
+
+/* ── EntityPayload track CTA (base — overridden by .gp-entity-payload__actions
+       .gp-entity-payload__track-cta which appears earlier in this file; the
+       descending-specificity ordering is faithfully reproduced from globals.css
+       and triggers a Biome warning that's pre-existing) ──────────────────── */
+
+/* biome-ignore lint/style/noDescendingSpecificity: faithful reproduction of the globals.css cascade — the higher-specificity override (.gp-entity-payload__actions .gp-entity-payload__track-cta) intentionally appears earlier in this file */
+.gp-entity-payload__track-cta {
+  padding: 0.5rem 0.875rem;
+  background: var(--gp-track-cta-bg);
+  color: var(--gp-surface);
+  border: none;
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  width: fit-content;
+  margin: 0.5rem 0;
+  transition: var(--gp-transition);
+}
+
+.gp-entity-payload__track-cta:hover {
+  background: var(--gp-track-cta-bg-hover);
+}
+
+.gp-entity-payload__track-error {
+  margin: 0;
+  color: var(--gp-danger);
+  font-size: 0.8125rem;
+}
+
+/* ── Tracking inspector header (status pill + run summary card) ────────── */
+
+.gp-track-insp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-2);
+  align-items: center;
+  margin-bottom: 14px;
+}
+.gp-track-insp-meta__dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gp-ink);
+  padding: 3px 10px 3px 8px;
+  background: var(--gp-surface-raised);
+  border-radius: 999px;
+}
+.gp-track-insp-meta__when {
+  font-size: 12px;
+  color: var(--gp-ink-faint);
+}
+.gp-track-insp-card {
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  background: var(--gp-surface);
+}
+.gp-track-insp-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--gp-border);
+}
+.gp-track-insp-card__row:last-child {
+  border-bottom: none;
+}
+.gp-track-insp-card__row dt {
+  color: var(--gp-ink-muted);
+  font-size: 12px;
+  margin: 0;
+}
+.gp-track-insp-card__row dd {
+  color: var(--gp-ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* ── InterestPayload (v2 modern — overrides v1 above) ──────────────────── */
+
+.gp-interest-payload {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.gp-interest-payload__description {
+  font-size: 13px;
+  color: var(--gp-ink-muted);
+  margin: 0 0 14px;
+  line-height: 1.55;
+}
+.gp-interest-payload__description--empty {
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+.gp-interest-payload__section {
+  margin-bottom: 18px;
+}
+.gp-interest-payload__section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  margin: 0 0 8px;
+}
+.gp-interest-payload__section-title b {
+  color: var(--gp-ink-muted);
+  font-weight: 600;
+  margin-left: 4px;
+}
+.gp-interest-payload__queries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gp-interest-payload__query-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: var(--gp-font-mono);
+  background: var(--gp-active-bg);
+  color: var(--gp-ink);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.gp-interest-payload__entity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.gp-interest-payload__entity-chip {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  color: var(--gp-ink);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.gp-interest-payload__entity-chip:hover {
+  border-color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+.gp-interest-payload__hint {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  margin: 8px 0 0;
+  line-height: 1.55;
+}
+.gp-interest-payload__execution-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gp-hit-run {
+  position: relative;
+  padding: 10px 0 12px 22px;
+  border-left: 1.5px solid var(--gp-border);
+  margin-left: 4px;
+}
+.gp-hit-run::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gp-surface);
+  border: 1.5px solid var(--gp-border-strong);
+}
+.gp-hit-run--ok::before {
+  border-color: var(--gp-track-dedupe-new);
+  background: var(--gp-track-hit-new-bg);
+}
+.gp-hit-run__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  gap: var(--gp-space-2);
+}
+.gp-hit-run__time {
+  font-size: 12px;
+  font-family: var(--gp-font-mono);
+  color: var(--gp-ink);
+  font-weight: 500;
+}
+.gp-hit-run__sum {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.gp-hit-run__error {
+  font-size: 11px;
+  color: var(--gp-danger);
+  font-family: var(--gp-font-mono);
+  margin-top: 2px;
+  word-break: break-word;
+}
+.gp-interest-payload__executions-empty {
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--gp-surface-raised);
+  border-radius: 6px;
+}
+
+.gp-interest-payload__actions {
+  display: flex;
+  gap: var(--gp-space-2);
+  justify-content: flex-end;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gp-border);
+}
+.gp-interest-payload__actions button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--gp-border-strong);
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  transition: var(--gp-transition);
+}
+.gp-interest-payload__actions button:hover {
+  border-color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+.gp-interest-payload__actions .gp-interest-payload__action-delete {
+  color: var(--gp-danger);
+  border-color: var(--gp-border-strong);
+}
+.gp-interest-payload__actions .gp-interest-payload__action-delete:hover {
+  border-color: var(--gp-danger);
+  background: var(--gp-danger-bg);
+}
+
+/* ────────────────────────────────────────────────
+   User note payload (P5: Inspector kind=note authoring panel)
+
+   注：与 `.gp-source-view-payload`（extracted source-view，全只读详情）区分 ——
+       `.gp-note-payload` 是用户手写 note 的可编辑面板，
+       拥有 subtype 切换 / pin / archive / 内联 tag 编辑 / 实体解绑 / 重新分类 / 删除。
+   ──────────────────────────────────────────────── */
+
+.gp-note-payload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-4);
+}
+
+.gp-note-payload__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--gp-badge-err-ink);
+  background: var(--gp-badge-err-bg);
+  border: 1px solid var(--gp-badge-err-border);
+  border-radius: var(--gp-radius-sm);
+}
+
+.gp-note-payload__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__subtype-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Subtype chip — sits on top of `.gp-chip` primitive; active state inverts to
+   ink-bg / on-ink-text to match the topnav cat-pill / library filter chip
+   pattern (same "active = ink solid" rhythm across the app). */
+.gp-note-subtype-chip {
+  font-size: 12px;
+}
+.gp-note-subtype-chip.is-active {
+  background: var(--gp-ink);
+  color: var(--gp-on-ink);
+  border-color: var(--gp-ink);
+}
+.gp-note-subtype-chip.is-active:hover {
+  background: var(--gp-ink);
+  border-color: var(--gp-ink);
+}
+.gp-note-subtype-chip:disabled {
+  cursor: not-allowed;
+}
+/* Hue dot before label — same palette as NoteCard left-border so the user
+   reads "this chip = the color I just saw on the card". */
+.gp-note-subtype-chip::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-right: 2px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.gp-note-subtype-chip--memo {
+  color: var(--gp-chip-query-ink);
+}
+/* `.gp-note-subtype-chip--note` 沿用 .gp-note-subtype-chip 的默认中性色，
+   只有 memo 上色 —— 这样 chip 行视觉上明确传达 "勾上 memo 才有提醒"。 */
+.gp-note-subtype-chip.is-active::before {
+  background: var(--gp-on-ink);
+  opacity: 0.9;
+}
+/* When active, restore ink color for the label since the chip itself is now
+   solid ink — the colored hue would clash with the inverted background. */
+.gp-note-subtype-chip.is-active.gp-note-subtype-chip--memo,
+.gp-note-subtype-chip.is-active.gp-note-subtype-chip--note {
+  color: var(--gp-on-ink);
+}
+
+.gp-note-payload__meta-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gp-note-payload__pin,
+.gp-note-payload__archive {
+  font-size: 14px;
+  line-height: 1;
+}
+/* "Active" = pinned / archived state — fill the icon button with a soft
+   warn-amber tint so the user sees the flag is currently on. */
+.gp-note-payload__pin.is-active,
+.gp-note-payload__archive.is-active {
+  color: var(--gp-warn-accent-ink);
+  background: var(--gp-warn-soft-bg);
+  border-color: var(--gp-warn-soft-bg);
+}
+.gp-note-payload__pin.is-active:hover:not(:disabled),
+.gp-note-payload__archive.is-active:hover:not(:disabled) {
+  color: var(--gp-warn-accent-ink);
+  border-color: var(--gp-warn-soft-ink);
+}
+
+.gp-note-payload__date {
+  font-size: 11px;
+  color: var(--gp-ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--gp-font-mono);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ── Content textarea ──────────────────────────── */
+
+.gp-note-payload__content-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__content-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  resize: vertical;
+  min-height: 7rem;
+  transition: border-color var(--gp-transition);
+}
+.gp-note-payload__content-textarea:focus {
+  outline: none;
+  border-color: var(--gp-accent);
+}
+.gp-note-payload__content-textarea:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.gp-note-payload__save-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Section blocks (tags / entities / sources) ── */
+
+.gp-note-payload__tags-section,
+.gp-note-payload__entities,
+.gp-note-payload__sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__section-title {
+  margin: 0;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gp-ink-faint);
+  font-weight: 600;
+}
+
+/* Tag chip — inherits .gp-chip base; adds the inline ✕ button. */
+.gp-note-payload__tag-chip {
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.gp-note-payload__remove-tag,
+.gp-note-payload__remove-entity {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--gp-ink-faint);
+  cursor: pointer;
+  transition:
+    background var(--gp-transition),
+    color var(--gp-transition);
+}
+.gp-note-payload__remove-tag:hover:not(:disabled),
+.gp-note-payload__remove-entity:hover:not(:disabled) {
+  background: var(--gp-danger-bg);
+  color: var(--gp-danger);
+}
+.gp-note-payload__remove-tag:disabled,
+.gp-note-payload__remove-entity:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gp-note-payload__tag-input {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 9px;
+  background: transparent;
+  border: 1px dashed var(--gp-border-strong);
+  border-radius: 999px;
+  color: var(--gp-ink);
+  min-width: 7rem;
+  max-width: 12rem;
+  transition: border-color var(--gp-transition);
+}
+.gp-note-payload__tag-input::placeholder {
+  color: var(--gp-ink-faint);
+}
+.gp-note-payload__tag-input:focus {
+  outline: none;
+  border-style: solid;
+  border-color: var(--gp-accent);
+}
+.gp-note-payload__tag-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Entity chip — left half is a focusable navigation button, right is the ✕. */
+.gp-note-payload__entity-chip {
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.gp-note-payload__entity-link,
+.gp-note-payload__source-link {
+  all: unset;
+  cursor: pointer;
+  color: var(--gp-accent);
+  font-size: inherit;
+  text-decoration: none;
+  transition: color var(--gp-transition);
+}
+.gp-note-payload__entity-link:hover,
+.gp-note-payload__entity-link:focus-visible,
+.gp-note-payload__source-link:hover,
+.gp-note-payload__source-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+/* Sources list */
+.gp-note-payload__sources ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gp-note-payload__source-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gp-space-2);
+  font-size: 0.8125rem;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.gp-note-payload__source-relation {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gp-ink-faint);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+}
+
+.gp-note-payload__source-msg {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+.gp-note-payload__source-msg a {
+  color: var(--gp-accent);
+  text-decoration: none;
+}
+.gp-note-payload__source-msg a:hover {
+  text-decoration: underline;
+}
+
+/* ── Bottom actions ────────────────────────────── */
+
+.gp-note-payload__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--gp-space-2);
+  padding-top: var(--gp-space-3);
+  margin-top: var(--gp-space-1);
+  border-top: 1px solid var(--gp-border);
+  flex-wrap: wrap;
+}
+
+/* P7.1 Task 4: promote-to-source sits in its own section after the
+   destructive `__actions` row. border-top + padding visually separates
+   "forward action" from "destructive actions". */
+.gp-note-payload__promote-section {
+  margin-top: var(--gp-space-3);
+  padding-top: var(--gp-space-3);
+  border-top: 1px solid var(--gp-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+.gp-note-payload__promote-error {
+  color: var(--gp-danger);
+  font-size: 0.8125rem;
+  margin-top: var(--gp-space-2);
+}
+
+.gp-note-payload__translate-section {
+  margin-top: var(--gp-space-3);
+  padding-top: var(--gp-space-3);
+  border-top: 1px solid var(--gp-border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__translate-error {
+  color: var(--gp-danger);
+  font-size: 0.8125rem;
+  margin-top: var(--gp-space-2);
+}
+
+.gp-note-payload__translation-preview {
+  margin-top: var(--gp-space-3);
+  padding: var(--gp-space-3);
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__translation-preview-heading {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gp-ink-muted);
+}
+
+.gp-note-payload__translation-preview-body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gp-note-payload__mentioned {
+  margin-bottom: var(--gp-space-3);
+}
+
+.gp-mention {
+  display: inline;
+  padding: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px dashed currentColor;
+  color: var(--gp-accent);
+  cursor: pointer;
+  font: inherit;
+  text-align: inherit;
+}
+
+/* Hover state on an inline element — background would break across line
+   wraps, so we change the underline instead (dashed → solid + thicker).
+   Matches the "subtle inline link" aesthetic of Notion / Slack mentions. */
+.gp-mention:hover {
+  border-bottom-style: solid;
+  border-bottom-width: 1.5px;
+}
+
+.gp-mention:focus-visible {
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+}
+
+.gp-mention--unresolved {
+  color: var(--gp-ink-muted);
+  cursor: help;
+  border-bottom-color: var(--gp-border-strong);
+}
+
+.gp-mention--unresolved:hover {
+  border-bottom-style: dashed;
+  border-bottom-width: 1px;
+}
+
+@media (max-width: 640px) {
+  .gp-note-payload__head {
+    align-items: flex-start;
+  }
+  .gp-note-payload__date {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+.gp-note-payload__due-section {
+  margin-bottom: var(--gp-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-payload__due-input {
+  padding: var(--gp-space-2) var(--gp-space-3);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  background: var(--gp-surface);
+  font: inherit;
+  color: inherit;
+}
+
+.gp-note-payload__due-input:focus-visible {
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+}
+
+.gp-note-payload__due-input:disabled {
+  background: var(--gp-surface-raised);
+  cursor: not-allowed;
+}
+
+.gp-note-payload__due-status {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}

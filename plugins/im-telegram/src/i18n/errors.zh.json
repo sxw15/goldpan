@@ -1,0 +1,32 @@
+{
+  "input_empty": "消息为空。",
+  "text_too_long": "消息太长（最长 ${maxLen} 个字符）。",
+  "query_too_long": "问题太长（最长 ${maxLen} 个字符）。",
+  "input_too_long_for_intent": "消息太长，无法处理这类请求（最长 ${maxLen} 个字符）。",
+  "intent_failed": "抱歉，我没有理解你的消息。",
+  "submit_failed": "抱歉，保存失败 — 请稍后重试。",
+  "query_failed": "抱歉，回答失败 — 请稍后重试。",
+  "unknown_intent": "抱歉，我还不知道怎么处理这种请求。",
+  "plugin_error": "内部处理失败，请稍后重试。",
+  "unknown": "内部错误：${message}",
+
+  "submit.accepted": "✅ 已接收（任务 #${taskId}）",
+  "submit.accepted_with_urls": "✅ 已接收（任务 #${taskId}），共 ${urlCount} 个链接",
+  "submit.duplicate": "ℹ️ 已存在（来源 #${existingSourceId}）",
+
+  "submit_reject.input_empty": "消息为空。",
+  "submit_reject.text_too_short": "文本太短无法保存（至少 4 个字符）。",
+  "submit_reject.text_too_long": "文本太长无法保存（最长 ${maxLen} 个字符）。",
+  "submit_reject.url_blocked": "无法访问这个 URL — 指向的地址被屏蔽了。",
+  "submit_reject.url_invalid": "这看起来不像一个有效的 URL。",
+  "submit_reject.unknown": "保存失败，请稍后重试。",
+
+  "query.confidence_label": "置信度",
+  "query.sources_heading": "来源",
+
+  "filter.unsupported_content": "目前我只能处理文字消息。",
+
+  "callback.expired": "这条消息已过期。",
+  "callback.tracking_resolve_web_only": "请到 web 端解析这条追踪规则的主题 —— IM 暂不支持此选项。",
+  "render.unsupported_result_type": "内部错误：不支持的结果类型 \"${type}\"。"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@goldpan/plugin-collector-noop",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'examples have no tests' && exit 0"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}

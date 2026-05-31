@@ -1,0 +1,2200 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "344267a7-33e4-4387-8c17-444e4721adc4",
+  "prevId": "82d5c7a4-e828-45f3-8de6-b23e1b22e861",
+  "tables": {
+    "categories": {
+      "name": "categories",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_categories_path": {
+          "name": "idx_categories_path",
+          "columns": [
+            "path"
+          ],
+          "isUnique": true
+        },
+        "idx_categories_parent": {
+          "name": "idx_categories_parent",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "categories_parent_id_categories_id_fk": {
+          "name": "categories_parent_id_categories_id_fk",
+          "tableFrom": "categories",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "no_self_parent": {
+          "name": "no_self_parent",
+          "value": "\"categories\".\"parent_id\" IS NULL OR \"categories\".\"parent_id\" != \"categories\".\"id\""
+        }
+      }
+    },
+    "conversation_messages": {
+      "name": "conversation_messages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "conversation_id": {
+          "name": "conversation_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'normal'"
+        },
+        "buffered_expires_at": {
+          "name": "buffered_expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_conversation_messages_conv_created": {
+          "name": "idx_conversation_messages_conv_created",
+          "columns": [
+            "conversation_id",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_conv_msgs_buffered": {
+          "name": "idx_conv_msgs_buffered",
+          "columns": [
+            "status",
+            "buffered_expires_at"
+          ],
+          "isUnique": false,
+          "where": "status = 'buffered_wait'"
+        }
+      },
+      "foreignKeys": {
+        "conversation_messages_conversation_id_conversations_id_fk": {
+          "name": "conversation_messages_conversation_id_conversations_id_fk",
+          "tableFrom": "conversation_messages",
+          "tableTo": "conversations",
+          "columnsFrom": [
+            "conversation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "conversation_messages_role_enum": {
+          "name": "conversation_messages_role_enum",
+          "value": "\"conversation_messages\".\"role\" IN ('user', 'assistant')"
+        },
+        "conversation_messages_metadata_json": {
+          "name": "conversation_messages_metadata_json",
+          "value": "\"conversation_messages\".\"metadata\" IS NULL OR json_valid(\"conversation_messages\".\"metadata\")"
+        },
+        "conversation_messages_status_enum": {
+          "name": "conversation_messages_status_enum",
+          "value": "\"conversation_messages\".\"status\" IN ('normal','buffered_wait','consumed')"
+        }
+      }
+    },
+    "conversations": {
+      "name": "conversations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "session_key": {
+          "name": "session_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "last_message_at": {
+          "name": "last_message_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "archived_reason": {
+          "name": "archived_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "uq_conversations_active_session_key": {
+          "name": "uq_conversations_active_session_key",
+          "columns": [
+            "session_key"
+          ],
+          "isUnique": true,
+          "where": "\"conversations\".\"archived_at\" IS NULL"
+        },
+        "idx_conversations_session_key_archived": {
+          "name": "idx_conversations_session_key_archived",
+          "columns": [
+            "session_key",
+            "archived_at"
+          ],
+          "isUnique": false
+        },
+        "idx_conversations_channel_updated": {
+          "name": "idx_conversations_channel_updated",
+          "columns": [
+            "channel_id",
+            "updated_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "conversations_archived_reason_enum": {
+          "name": "conversations_archived_reason_enum",
+          "value": "\"conversations\".\"archived_reason\" IS NULL OR \"conversations\".\"archived_reason\" IN ('user_reset', 'auto_stale', 'admin')"
+        }
+      }
+    },
+    "db_metadata": {
+      "name": "db_metadata",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "entities": {
+      "name": "entities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description_translated": {
+          "name": "description_translated",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "keywords": {
+          "name": "keywords",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_entities_name": {
+          "name": "idx_entities_name",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "aliases_json": {
+          "name": "aliases_json",
+          "value": "json_valid(\"entities\".\"aliases\") AND json_type(\"entities\".\"aliases\") = 'array'"
+        },
+        "keywords_json": {
+          "name": "keywords_json",
+          "value": "json_valid(\"entities\".\"keywords\") AND json_type(\"entities\".\"keywords\") = 'array'"
+        }
+      }
+    },
+    "entity_categories": {
+      "name": "entity_categories",
+      "columns": {
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_ec_category": {
+          "name": "idx_ec_category",
+          "columns": [
+            "category_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "entity_categories_entity_id_entities_id_fk": {
+          "name": "entity_categories_entity_id_entities_id_fk",
+          "tableFrom": "entity_categories",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_categories_category_id_categories_id_fk": {
+          "name": "entity_categories_category_id_categories_id_fk",
+          "tableFrom": "entity_categories",
+          "tableTo": "categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "entity_categories_entity_id_category_id_pk": {
+          "columns": [
+            "entity_id",
+            "category_id"
+          ],
+          "name": "entity_categories_entity_id_category_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "entity_relations": {
+      "name": "entity_relations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "source_entity_id": {
+          "name": "source_entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_entity_id": {
+          "name": "target_entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relation_type": {
+          "name": "relation_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description_translated": {
+          "name": "description_translated",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_entity_relations_source": {
+          "name": "idx_entity_relations_source",
+          "columns": [
+            "source_entity_id"
+          ],
+          "isUnique": false
+        },
+        "idx_entity_relations_target": {
+          "name": "idx_entity_relations_target",
+          "columns": [
+            "target_entity_id"
+          ],
+          "isUnique": false
+        },
+        "uq_entity_relation": {
+          "name": "uq_entity_relation",
+          "columns": [
+            "source_entity_id",
+            "target_entity_id",
+            "relation_type"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "entity_relations_source_entity_id_entities_id_fk": {
+          "name": "entity_relations_source_entity_id_entities_id_fk",
+          "tableFrom": "entity_relations",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "source_entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_relations_target_entity_id_entities_id_fk": {
+          "name": "entity_relations_target_entity_id_entities_id_fk",
+          "tableFrom": "entity_relations",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "target_entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_relations_source_id_sources_id_fk": {
+          "name": "entity_relations_source_id_sources_id_fk",
+          "tableFrom": "entity_relations",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "relation_type_enum": {
+          "name": "relation_type_enum",
+          "value": "\"entity_relations\".\"relation_type\" IN ('organizational', 'competitive', 'collaborative', 'technical', 'causal', 'general')"
+        },
+        "no_self_relation": {
+          "name": "no_self_relation",
+          "value": "\"entity_relations\".\"source_entity_id\" != \"entity_relations\".\"target_entity_id\""
+        }
+      }
+    },
+    "event_logs": {
+      "name": "event_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "point_id": {
+          "name": "point_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_event_logs_source": {
+          "name": "idx_event_logs_source",
+          "columns": [
+            "source_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "event_logs_source_id_sources_id_fk": {
+          "name": "event_logs_source_id_sources_id_fk",
+          "tableFrom": "event_logs",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "event_logs_entity_id_entities_id_fk": {
+          "name": "event_logs_entity_id_entities_id_fk",
+          "tableFrom": "event_logs",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "event_logs_point_id_knowledge_points_id_fk": {
+          "name": "event_logs_point_id_knowledge_points_id_fk",
+          "tableFrom": "event_logs",
+          "tableTo": "knowledge_points",
+          "columnsFrom": [
+            "point_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "action_enum": {
+          "name": "action_enum",
+          "value": "\"event_logs\".\"action\" IN ('point_created', 'entity_created', 'source_confirmed', 'source_confirmed_empty', 'source_discarded', 'point_discarded', 'entity_aliases_discovered')"
+        }
+      }
+    },
+    "im_messages_seen": {
+      "name": "im_messages_seen",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "channel_id": {
+          "name": "channel_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "chat_id": {
+          "name": "chat_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform_msg_id": {
+          "name": "platform_msg_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seen_at": {
+          "name": "seen_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_im_messages_seen_seen_at": {
+          "name": "idx_im_messages_seen_seen_at",
+          "columns": [
+            "seen_at"
+          ],
+          "isUnique": false
+        },
+        "uq_im_messages_seen": {
+          "name": "uq_im_messages_seen",
+          "columns": [
+            "channel_id",
+            "account_id",
+            "chat_id",
+            "platform_msg_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "knowledge_points": {
+      "name": "knowledge_points",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_translated": {
+          "name": "content_translated",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "type_enum": {
+          "name": "type_enum",
+          "value": "\"knowledge_points\".\"type\" IN ('fact', 'opinion')"
+        },
+        "status_enum": {
+          "name": "status_enum",
+          "value": "\"knowledge_points\".\"status\" IN ('active', 'discarded')"
+        }
+      }
+    },
+    "llm_calls": {
+      "name": "llm_calls",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "step": {
+          "name": "step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "request_body": {
+          "name": "request_body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "response_body": {
+          "name": "response_body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "request_schema": {
+          "name": "request_schema",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prompt_hash": {
+          "name": "prompt_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'success'"
+        },
+        "failure_kind": {
+          "name": "failure_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "failure_message": {
+          "name": "failure_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attempt_number": {
+          "name": "attempt_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_llm_calls_prompt_hash": {
+          "name": "idx_llm_calls_prompt_hash",
+          "columns": [
+            "prompt_hash",
+            "step"
+          ],
+          "isUnique": false
+        },
+        "idx_llm_calls_source_id": {
+          "name": "idx_llm_calls_source_id",
+          "columns": [
+            "source_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "llm_calls_source_id_sources_id_fk": {
+          "name": "llm_calls_source_id_sources_id_fk",
+          "tableFrom": "llm_calls",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "step_enum": {
+          "name": "step_enum",
+          "value": "\"llm_calls\".\"step\" IN ('classifier', 'extractor', 'matcher', 'comparator', 'verifier', 'intent_classifier', 'query_understand', 'query', 'relator', 'translator', 'tracking_action_parser', 'github_action_parser', 'digest_summary', 'digest_action_parser')"
+        },
+        "llm_calls_outcome_enum": {
+          "name": "llm_calls_outcome_enum",
+          "value": "\"llm_calls\".\"outcome\" IN ('success', 'failed')"
+        },
+        "llm_calls_failure_kind_enum": {
+          "name": "llm_calls_failure_kind_enum",
+          "value": "\"llm_calls\".\"failure_kind\" IS NULL OR \"llm_calls\".\"failure_kind\" IN ('schema_validation', 'content_policy', 'rate_limit', 'timeout', 'unknown')"
+        },
+        "llm_calls_outcome_failure_consistency": {
+          "name": "llm_calls_outcome_failure_consistency",
+          "value": "(\"llm_calls\".\"outcome\" = 'success' AND \"llm_calls\".\"failure_kind\" IS NULL AND \"llm_calls\".\"failure_message\" IS NULL) OR (\"llm_calls\".\"outcome\" = 'failed' AND \"llm_calls\".\"failure_kind\" IS NOT NULL)"
+        },
+        "llm_calls_attempt_positive": {
+          "name": "llm_calls_attempt_positive",
+          "value": "\"llm_calls\".\"attempt_number\" >= 1"
+        }
+      }
+    },
+    "note_entities": {
+      "name": "note_entities",
+      "columns": {
+        "note_id": {
+          "name": "note_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_note_entities_entity": {
+          "name": "idx_note_entities_entity",
+          "columns": [
+            "entity_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "note_entities_note_id_notes_id_fk": {
+          "name": "note_entities_note_id_notes_id_fk",
+          "tableFrom": "note_entities",
+          "tableTo": "notes",
+          "columnsFrom": [
+            "note_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "note_entities_entity_id_entities_id_fk": {
+          "name": "note_entities_entity_id_entities_id_fk",
+          "tableFrom": "note_entities",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "note_entities_note_id_entity_id_pk": {
+          "columns": [
+            "note_id",
+            "entity_id"
+          ],
+          "name": "note_entities_note_id_entity_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "note_sources": {
+      "name": "note_sources",
+      "columns": {
+        "note_id": {
+          "name": "note_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relation": {
+          "name": "relation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'reference'"
+        }
+      },
+      "indexes": {
+        "idx_note_sources_source": {
+          "name": "idx_note_sources_source",
+          "columns": [
+            "source_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "note_sources_note_id_notes_id_fk": {
+          "name": "note_sources_note_id_notes_id_fk",
+          "tableFrom": "note_sources",
+          "tableTo": "notes",
+          "columnsFrom": [
+            "note_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "note_sources_source_id_sources_id_fk": {
+          "name": "note_sources_source_id_sources_id_fk",
+          "tableFrom": "note_sources",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "note_sources_note_id_source_id_pk": {
+          "columns": [
+            "note_id",
+            "source_id"
+          ],
+          "name": "note_sources_note_id_source_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "note_sources_relation_enum": {
+          "name": "note_sources_relation_enum",
+          "value": "\"note_sources\".\"relation\" IN ('reference','derived_from')"
+        }
+      }
+    },
+    "note_tags": {
+      "name": "note_tags",
+      "columns": {
+        "note_id": {
+          "name": "note_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_note_tags_tag": {
+          "name": "idx_note_tags_tag",
+          "columns": [
+            "tag"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "note_tags_note_id_notes_id_fk": {
+          "name": "note_tags_note_id_notes_id_fk",
+          "tableFrom": "note_tags",
+          "tableTo": "notes",
+          "columnsFrom": [
+            "note_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "note_tags_note_id_tag_pk": {
+          "columns": [
+            "note_id",
+            "tag"
+          ],
+          "name": "note_tags_note_id_tag_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "notes": {
+      "name": "notes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_translated": {
+          "name": "content_translated",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "subtype": {
+          "name": "subtype",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'note'"
+        },
+        "pinned": {
+          "name": "pinned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "archived": {
+          "name": "archived",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "source_message_id": {
+          "name": "source_message_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reminded_at": {
+          "name": "reminded_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_notes_subtype": {
+          "name": "idx_notes_subtype",
+          "columns": [
+            "subtype"
+          ],
+          "isUnique": false
+        },
+        "idx_notes_pinned": {
+          "name": "idx_notes_pinned",
+          "columns": [
+            "pinned"
+          ],
+          "isUnique": false,
+          "where": "pinned = 1"
+        },
+        "idx_notes_archived": {
+          "name": "idx_notes_archived",
+          "columns": [
+            "archived"
+          ],
+          "isUnique": false,
+          "where": "archived = 1"
+        },
+        "idx_notes_created_at": {
+          "name": "idx_notes_created_at",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_notes_due_pending": {
+          "name": "idx_notes_due_pending",
+          "columns": [
+            "due_at"
+          ],
+          "isUnique": false,
+          "where": "due_at IS NOT NULL AND reminded_at IS NULL AND archived = 0"
+        }
+      },
+      "foreignKeys": {
+        "notes_source_message_id_conversation_messages_id_fk": {
+          "name": "notes_source_message_id_conversation_messages_id_fk",
+          "tableFrom": "notes",
+          "tableTo": "conversation_messages",
+          "columnsFrom": [
+            "source_message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "notes_subtype_enum": {
+          "name": "notes_subtype_enum",
+          "value": "\"notes\".\"subtype\" IN ('memo','note')"
+        }
+      }
+    },
+    "point_tags": {
+      "name": "point_tags",
+      "columns": {
+        "point_id": {
+          "name": "point_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_point_tags_tag": {
+          "name": "idx_point_tags_tag",
+          "columns": [
+            "tag_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "point_tags_point_id_knowledge_points_id_fk": {
+          "name": "point_tags_point_id_knowledge_points_id_fk",
+          "tableFrom": "point_tags",
+          "tableTo": "knowledge_points",
+          "columnsFrom": [
+            "point_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "point_tags_tag_id_tags_id_fk": {
+          "name": "point_tags_tag_id_tags_id_fk",
+          "tableFrom": "point_tags",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tag_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "point_tags_point_id_tag_id_pk": {
+          "columns": [
+            "point_id",
+            "tag_id"
+          ],
+          "name": "point_tags_point_id_tag_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "processing_tasks": {
+      "name": "processing_tasks",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "input_type": {
+          "name": "input_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "pipeline_step": {
+          "name": "pipeline_step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_kind": {
+          "name": "error_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_tasks_status": {
+          "name": "idx_tasks_status",
+          "columns": [
+            "status",
+            "type",
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_tasks_source": {
+          "name": "idx_tasks_source",
+          "columns": [
+            "source_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "processing_tasks_source_id_sources_id_fk": {
+          "name": "processing_tasks_source_id_sources_id_fk",
+          "tableFrom": "processing_tasks",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "status_enum": {
+          "name": "status_enum",
+          "value": "\"processing_tasks\".\"status\" IN ('pending', 'processing', 'done', 'error')"
+        },
+        "type_enum": {
+          "name": "type_enum",
+          "value": "\"processing_tasks\".\"type\" IN ('pipeline')"
+        },
+        "input_type_enum": {
+          "name": "input_type_enum",
+          "value": "\"processing_tasks\".\"input_type\" IS NULL OR \"processing_tasks\".\"input_type\" IN ('url', 'text', 'opinion')"
+        },
+        "done_requires_result": {
+          "name": "done_requires_result",
+          "value": "\"processing_tasks\".\"status\" != 'done' OR \"processing_tasks\".\"result\" IS NOT NULL"
+        },
+        "error_requires_message": {
+          "name": "error_requires_message",
+          "value": "\"processing_tasks\".\"status\" != 'error' OR \"processing_tasks\".\"error_message\" IS NOT NULL"
+        },
+        "error_kind_enum": {
+          "name": "error_kind_enum",
+          "value": "\"processing_tasks\".\"error_kind\" IS NULL OR \"processing_tasks\".\"error_kind\" IN ('schema_validation', 'content_policy', 'content_length', 'rate_limit', 'timeout', 'unknown')"
+        },
+        "error_requires_kind": {
+          "name": "error_requires_kind",
+          "value": "\"processing_tasks\".\"status\" != 'error' OR \"processing_tasks\".\"error_kind\" IS NOT NULL"
+        },
+        "result_json": {
+          "name": "result_json",
+          "value": "\"processing_tasks\".\"result\" IS NULL OR json_valid(\"processing_tasks\".\"result\")"
+        },
+        "pipeline_step_enum": {
+          "name": "pipeline_step_enum",
+          "value": "\"processing_tasks\".\"pipeline_step\" IS NULL OR \"processing_tasks\".\"pipeline_step\" IN ('collecting', 'classifying', 'extracting', 'matching', 'relating', 'comparing', 'verifying', 'translating', 'validatePipelineOutput', 'storing', 'content_validation')"
+        }
+      }
+    },
+    "runtime_config_overrides": {
+      "name": "runtime_config_overrides",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "source_entity_points": {
+      "name": "source_entity_points",
+      "columns": {
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "point_id": {
+          "name": "point_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "judgment": {
+          "name": "judgment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_sep_entity_point": {
+          "name": "idx_sep_entity_point",
+          "columns": [
+            "entity_id",
+            "point_id"
+          ],
+          "isUnique": false
+        },
+        "idx_sep_point": {
+          "name": "idx_sep_point",
+          "columns": [
+            "point_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "source_entity_points_source_id_sources_id_fk": {
+          "name": "source_entity_points_source_id_sources_id_fk",
+          "tableFrom": "source_entity_points",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "source_entity_points_entity_id_entities_id_fk": {
+          "name": "source_entity_points_entity_id_entities_id_fk",
+          "tableFrom": "source_entity_points",
+          "tableTo": "entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "source_entity_points_point_id_knowledge_points_id_fk": {
+          "name": "source_entity_points_point_id_knowledge_points_id_fk",
+          "tableFrom": "source_entity_points",
+          "tableTo": "knowledge_points",
+          "columnsFrom": [
+            "point_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "source_entity_points_source_id_entity_id_point_id_pk": {
+          "columns": [
+            "source_id",
+            "entity_id",
+            "point_id"
+          ],
+          "name": "source_entity_points_source_id_entity_id_point_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "judgment_enum": {
+          "name": "judgment_enum",
+          "value": "\"source_entity_points\".\"judgment\" IN ('new', 'skipped')"
+        }
+      }
+    },
+    "sources": {
+      "name": "sources",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "normalized_url": {
+          "name": "normalized_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "original_url": {
+          "name": "original_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "raw_content": {
+          "name": "raw_content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'processing'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'user'"
+        },
+        "tracking_rule_id": {
+          "name": "tracking_rule_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_sources_url_active": {
+          "name": "idx_sources_url_active",
+          "columns": [
+            "normalized_url"
+          ],
+          "isUnique": true,
+          "where": "status IN ('processing', 'confirmed') AND origin != 'github_refresh'"
+        },
+        "idx_sources_url_processing_refresh": {
+          "name": "idx_sources_url_processing_refresh",
+          "columns": [
+            "normalized_url"
+          ],
+          "isUnique": true,
+          "where": "status = 'processing' AND origin = 'github_refresh'"
+        },
+        "idx_sources_normalized_url": {
+          "name": "idx_sources_normalized_url",
+          "columns": [
+            "normalized_url"
+          ],
+          "isUnique": false
+        },
+        "idx_sources_status": {
+          "name": "idx_sources_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_sources_origin": {
+          "name": "idx_sources_origin",
+          "columns": [
+            "origin"
+          ],
+          "isUnique": false
+        },
+        "idx_sources_tracking_rule_id": {
+          "name": "idx_sources_tracking_rule_id",
+          "columns": [
+            "tracking_rule_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "status_enum": {
+          "name": "status_enum",
+          "value": "\"sources\".\"status\" IN ('processing', 'confirmed', 'confirmed_empty', 'failed', 'discarded')"
+        },
+        "kind_enum": {
+          "name": "kind_enum",
+          "value": "\"sources\".\"kind\" IN ('external', 'user')"
+        },
+        "kind_url_constraint": {
+          "name": "kind_url_constraint",
+          "value": "\n      (\"sources\".\"kind\" = 'external' AND \"sources\".\"normalized_url\" IS NOT NULL AND \"sources\".\"original_url\" IS NOT NULL)\n      OR (\"sources\".\"kind\" = 'user' AND \"sources\".\"normalized_url\" IS NULL AND \"sources\".\"original_url\" IS NULL AND \"sources\".\"raw_content\" IS NOT NULL)\n    "
+        },
+        "metadata_json": {
+          "name": "metadata_json",
+          "value": "\"sources\".\"metadata\" IS NULL OR (json_valid(\"sources\".\"metadata\") AND json_type(\"sources\".\"metadata\") = 'object')"
+        },
+        "origin_enum": {
+          "name": "origin_enum",
+          "value": "\"sources\".\"origin\" IN ('user', 'tracking', 'github_refresh')"
+        }
+      }
+    },
+    "submission_logs": {
+      "name": "submission_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "raw_input": {
+          "name": "raw_input",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "task_id": {
+          "name": "task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "submission_logs_task_id_processing_tasks_id_fk": {
+          "name": "submission_logs_task_id_processing_tasks_id_fk",
+          "tableFrom": "submission_logs",
+          "tableTo": "processing_tasks",
+          "columnsFrom": [
+            "task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "submission_logs_source_id_sources_id_fk": {
+          "name": "submission_logs_source_id_sources_id_fk",
+          "tableFrom": "submission_logs",
+          "tableTo": "sources",
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "result_enum": {
+          "name": "result_enum",
+          "value": "\"submission_logs\".\"result\" IN ('accepted', 'duplicate', 'rejected')"
+        },
+        "non_accepted_requires_reason": {
+          "name": "non_accepted_requires_reason",
+          "value": "\"submission_logs\".\"result\" = 'accepted' OR \"submission_logs\".\"reason\" IS NOT NULL"
+        }
+      }
+    },
+    "tags": {
+      "name": "tags",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_tags_name": {
+          "name": "idx_tags_name",
+          "columns": [
+            "lower(\"name\")"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "task_logs": {
+      "name": "task_logs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "task_id": {
+          "name": "task_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "step": {
+          "name": "step",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "event": {
+          "name": "event",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "input_summary": {
+          "name": "input_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "output_summary": {
+          "name": "output_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(ROUND((julianday('now') - 2440587.5) * 86400000) AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "idx_task_logs_task_id": {
+          "name": "idx_task_logs_task_id",
+          "columns": [
+            "task_id",
+            "timestamp"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "task_logs_task_id_processing_tasks_id_fk": {
+          "name": "task_logs_task_id_processing_tasks_id_fk",
+          "tableFrom": "task_logs",
+          "tableTo": "processing_tasks",
+          "columnsFrom": [
+            "task_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "task_log_event_enum": {
+          "name": "task_log_event_enum",
+          "value": "\"task_logs\".\"event\" IN ('start', 'end', 'error', 'skip')"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "idx_tags_name": {
+        "columns": {
+          "lower(\"name\")": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}

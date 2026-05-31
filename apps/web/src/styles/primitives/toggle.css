@@ -1,0 +1,37 @@
+/* Toggle primitive — pill-shaped on/off switch with sliding thumb.
+   Used by <Toggle> in components/ui/toggle.tsx. */
+
+.gp-toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #d4d4d4;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.gp-toggle[data-on="1"] {
+  background: var(--gp-ink);
+}
+.gp-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.gp-toggle i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s;
+  display: block;
+}
+.gp-toggle[data-on="1"] i {
+  transform: translateX(16px);
+}

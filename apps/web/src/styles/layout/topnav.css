@@ -1,0 +1,145 @@
+/* Top nav：水平导航条 + task popover/badge slot。 */
+
+.gp-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-4);
+  height: var(--gp-topnav-h);
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--gp-border);
+  /* Solid — avoids stacked frosted bands next to .gp-privacy / chat chrome. */
+  background: var(--gp-bg);
+}
+
+.gp-topnav__left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.gp-topnav__brand {
+  font-family: var(--gp-font-ui);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--gp-ink);
+  text-decoration: none;
+}
+
+.gp-topnav__tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  flex: 1;
+}
+
+.gp-topnav__tabs a {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--gp-ink-muted);
+  text-decoration: none;
+  border-radius: var(--gp-radius-sm);
+  transition:
+    color var(--gp-transition),
+    background var(--gp-transition);
+}
+
+.gp-topnav__tabs a:hover {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+.gp-topnav__tabs a[aria-current="page"] {
+  color: var(--gp-ink);
+  font-weight: 600;
+  background: var(--gp-active-bg);
+}
+
+.gp-topnav__tabs a:focus-visible {
+  outline: 2px solid var(--gp-ink);
+  outline-offset: 2px;
+}
+
+.gp-topnav__tab-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 1px 5px;
+  margin-left: 5px;
+  border-radius: 3px;
+  background: var(--gp-surface-raised);
+  color: var(--gp-ink-faint);
+  letter-spacing: 0.02em;
+  font-family: var(--gp-font-mono);
+  vertical-align: middle;
+}
+.gp-topnav__tab-badge--warn {
+  background: var(--gp-warn-soft-bg);
+  color: var(--gp-warn-soft-ink);
+}
+
+.gp-topnav__right {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  flex-shrink: 0;
+}
+
+.gp-topnav__cmdk {
+  padding: 0.3rem 0.7rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--gp-ink-muted);
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--gp-transition),
+    background var(--gp-transition);
+}
+
+.gp-topnav__cmdk:hover {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+/* TopNav icon links — .gp-btn[data-size="md"] adds horizontal padding; without
+   a higher-specificity reset the inner Lucide SVG is squeezed (~13×20 in a 36px box). */
+.gp-btn.gp-topnav__history[data-variant="ghost"],
+.gp-btn.gp-topnav__settings[data-variant="ghost"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  box-sizing: border-box;
+  gap: 0;
+}
+
+.gp-btn.gp-topnav__history[data-variant="ghost"] svg,
+.gp-btn.gp-topnav__settings[data-variant="ghost"] svg {
+  flex-shrink: 0;
+}
+
+.gp-topnav__history {
+  position: relative;
+}
+
+.gp-topnav__settings[aria-current="page"] {
+  color: var(--gp-ink);
+  background: var(--gp-active-bg);
+}
+
+@media (max-width: 480px) {
+  .gp-topnav__cmdk {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}

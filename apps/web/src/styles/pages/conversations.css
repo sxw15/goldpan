@@ -1,0 +1,91 @@
+/* /conversations — historical conversation management page (S7+S8). */
+
+.gp-conversations {
+  /* width: 100% needed because .gp-main is a column flex container — without
+     it, margin: 0 auto suppresses cross-axis stretch and the page shrinks to
+     content. */
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.gp-conversations__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+.gp-conversations__error {
+  color: var(--gp-danger);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: color-mix(in srgb, var(--gp-danger) 10%, transparent);
+  border-radius: 6px;
+}
+.gp-conversations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+.gp-conversations-list__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title actions"
+    "meta  actions";
+  gap: 4px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+}
+.gp-conversations-list__title {
+  grid-area: title;
+  font-weight: 500;
+}
+.gp-conversations-list__meta {
+  grid-area: meta;
+  color: var(--gp-ink-muted);
+  font-size: 0.85rem;
+}
+.gp-conversations-list__actions {
+  grid-area: actions;
+  display: flex;
+  gap: var(--gp-space-2);
+  align-items: center;
+}
+.gp-conversations-list__pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  font-size: 0.9rem;
+}
+.gp-conversations-list__pagination-disabled {
+  color: var(--gp-ink-faint);
+  opacity: 0.5;
+}
+.gp-conversations-list__continue-btn {
+  color: var(--gp-accent);
+  border: 1px solid var(--gp-accent);
+  background: transparent;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.88rem;
+}
+.gp-conversations-list__continue-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gp-accent) 10%, transparent);
+}
+.gp-conversations-list__delete-btn {
+  color: var(--gp-danger);
+  border: 1px solid var(--gp-danger);
+  background: transparent;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.88rem;
+}
+.gp-conversations-list__delete-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gp-danger) 10%, transparent);
+}

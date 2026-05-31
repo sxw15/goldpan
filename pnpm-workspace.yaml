@@ -1,0 +1,12 @@
+packages:
+  - "packages/*"
+  - "plugins/*"
+  - "apps/*"
+  - "docs/example-plugins/*"
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  better-sqlite3: true
+  esbuild: true
+  protobufjs: true
+  sharp: true

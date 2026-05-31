@@ -1,0 +1,42 @@
+/* Goldpan global stylesheet — see note/css-split-mapping.md for split history. */
+
+@import "./tokens.css";
+@import "./base.css";
+
+@import "./layout/shell.css";
+@import "./layout/topnav.css";
+@import "./layout/feed.css";
+@import "./layout/cmdk.css";
+@import "./layout/login.css";
+@import "./layout/privacy.css";
+
+@import "./primitives/buttons.css";
+@import "./primitives/modal.css";
+@import "./primitives/toggle.css";
+@import "./primitives/status-chip.css";
+@import "./primitives/toast.css";
+@import "./primitives/chips.css";
+@import "./primitives/section-head.css";
+@import "./primitives/avatar.css";
+@import "./primitives/hero.css";
+@import "./primitives/setup-guide.css";
+@import "./primitives/password-input.css";
+@import "./primitives/restart-panel.css";
+@import "./primitives/bilingual.css";
+
+@import "./pages/chat.css";
+@import "./pages/task-detail.css";
+@import "./pages/tasks-list.css";
+@import "./pages/task-log.css";
+@import "./pages/digest.css";
+@import "./pages/library.css";
+@import "./pages/tracking.css";
+@import "./pages/inspector.css";
+@import "./pages/settings.css";
+@import "./pages/conversations.css";
+@import "./pages/debug.css";
+@import "./pages/error-pages.css";
+@import "./pages/onboarding.css";
+
+@import "./utils/visually-hidden.css";
+@import "./utils/animations.css";

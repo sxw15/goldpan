@@ -1,0 +1,27 @@
+{
+  "name": "@goldpan/plugin-tool-search-brave",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "pretest": "node ../../scripts/ensure-built.mjs @goldpan/core",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "vitest": "^4.0.0",
+    "typescript": "^5.8.0"
+  }
+}

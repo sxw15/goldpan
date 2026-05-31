@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Goldpan · Pipeline 介绍动画（嵌入 onboarding 用）</title>
+
+    <style>
+      /* ─────────────────────────────────────────────────────────
+         设计 token — 与 onboarding 页面视觉对齐，但本动画自带
+         样式以便单文件调试。
+         ─────────────────────────────────────────────────────── */
+      :root {
+        --gold: #d4a04c;
+        --gold-bright: #f0c674;
+        --gold-soft: #8c6a32;
+        --tx-mono:
+          'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', 'Consolas',
+          monospace;
+        --tx-sans:
+          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+          sans-serif;
+      }
+
+      [data-theme='dark'] {
+        --bg: #0b0d10;
+        --surface: #161a1f;
+        --surface-2: #1c2128;
+        --border: #2a2f36;
+        --border-strong: #3a414c;
+        --text: #e8eaed;
+        --text-2: #b8bdc7;
+        --text-dim: #7a8290;
+        --illust-stroke: #5a6270;
+        --illust-fill: #20262e;
+      }
+
+      [data-theme='light'] {
+        --bg: #f5f3ef;
+        --surface: #ffffff;
+        --surface-2: #f8f6f1;
+        --border: #d8d2c4;
+        --border-strong: #b8b0a0;
+        --text: #1d2128;
+        --text-2: #4a5260;
+        --text-dim: #7a8290;
+        --illust-stroke: #b8b0a0;
+        --illust-fill: #f5f3ef;
+        --gold: #b58234;
+        --gold-bright: #d4a04c;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--tx-sans);
+        font-size: 14px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      ::selection {
+        background: var(--gold);
+        color: var(--bg);
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+
+      /* ─── DEMO 外壳（模拟 onboarding 页面，让你直观看到嵌入后的样子） */
+
+      .demo-wrapper {
+        max-width: 1080px;
+        margin: 32px auto;
+        padding: 0 24px;
+      }
+
+      .demo-page {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px 28px 28px;
+        position: relative;
+      }
+
+      .demo-page::before {
+        content: 'Mock · /onboarding/pipeline';
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        background: var(--bg);
+        padding: 0 8px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+      }
+
+      .demo-crumb {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin-bottom: 8px;
+      }
+
+      .demo-h {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+      }
+
+      .demo-sub {
+        font-size: 13px;
+        color: var(--text-2);
+        margin: 0 0 24px;
+      }
+
+      .demo-page-grid {
+        display: grid;
+        grid-template-columns: 1fr 240px;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .demo-skeleton {
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        padding: 18px 20px;
+        margin-bottom: 14px;
+        color: var(--text-dim);
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+      }
+
+      .demo-skeleton .ph-bar {
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .demo-skeleton .ph-bar.short {
+        width: 40%;
+      }
+      .demo-skeleton .ph-bar.mid {
+        width: 70%;
+      }
+
+      .demo-aside {
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        padding: 14px;
+        color: var(--text-dim);
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        height: 320px;
+      }
+
+      .demo-aside .ph-bar {
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        margin-top: 8px;
+        width: 60%;
+      }
+      .demo-aside .ph-bar:nth-child(odd) {
+        width: 80%;
+      }
+
+      /* ─── 真正的动画区域 ────────────────────────────────────────── */
+
+      .anim {
+        position: relative;
+        background: var(--surface-2);
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 4px color-mix(in oklab, var(--gold) 10%, transparent);
+      }
+
+      .anim::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 0% 0%,
+          color-mix(in oklab, var(--gold) 8%, transparent),
+          transparent 60%
+        );
+        pointer-events: none;
+      }
+
+      .anim__hat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        z-index: 2;
+        background: var(--surface);
+      }
+
+      .anim__hat-l {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .anim__hat-mark {
+        width: 14px;
+        height: 14px;
+      }
+
+      .anim__hat-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .anim__hat-sub {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-left: 8px;
+      }
+
+      .anim__hat-r {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: var(--text-dim);
+        transition: all 120ms ease;
+      }
+      .icon-btn:hover:not(:disabled) {
+        color: var(--gold);
+        border-color: var(--border-strong);
+      }
+      .icon-btn[aria-pressed='true'] {
+        color: var(--gold);
+      }
+
+      /* 主内容区：左插画 + 右说明 */
+      .anim__body {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 20px;
+        padding: 18px 22px 14px;
+        min-height: 220px;
+      }
+
+      .anim__illust {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .anim__illust svg {
+        width: 100%;
+        height: 100%;
+        max-height: 180px;
+      }
+
+      .anim__copy {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 4px 4px 0 0;
+      }
+
+      .anim__step-num {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+
+      .anim__step-num strong {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      .anim__title {
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        margin: 0;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .anim__opt-tag {
+        display: inline-flex;
+        align-items: center;
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border: 1px solid var(--border-strong);
+        color: var(--text-dim);
+      }
+      .anim__opt-tag[hidden] {
+        display: none;
+      }
+
+      .anim__rows {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .anim__row {
+        display: grid;
+        grid-template-columns: 70px 1fr;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .anim__row-key {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--gold);
+        padding-top: 2px;
+      }
+
+      .anim__row-key.dim {
+        color: var(--text-dim);
+      }
+
+      .anim__row-val {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--text);
+      }
+
+      .anim__row-val.muted {
+        color: var(--text-2);
+      }
+
+      /* fade transition for copy on step change */
+      .anim__copy.is-changing {
+        animation: copy-fade 380ms ease-out;
+      }
+      @keyframes copy-fade {
+        0% {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .anim__illust.is-changing {
+        animation: illust-fade 420ms ease-out;
+      }
+      @keyframes illust-fade {
+        0% {
+          opacity: 0;
+          transform: scale(0.96);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* timeline */
+      .anim__timeline {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 8px 22px 12px;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+      }
+
+      .anim__rail {
+        flex: 1;
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        align-items: center;
+        height: 28px;
+      }
+
+      .anim__rail::before {
+        content: '';
+        position: absolute;
+        left: calc(100% / 16);
+        right: calc(100% / 16);
+        top: 50%;
+        height: 1px;
+        background: var(--border);
+        transform: translateY(-50%);
+      }
+
+      .anim__rail::after {
+        content: '';
+        position: absolute;
+        left: calc(100% / 16);
+        top: 50%;
+        height: 1px;
+        background: linear-gradient(90deg, var(--gold-soft), var(--gold-bright));
+        width: 0;
+        transform: translateY(-50%);
+        transition: width 500ms cubic-bezier(0.6, 0, 0.4, 1);
+      }
+
+      .anim__dot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        position: relative;
+        z-index: 1;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+      }
+
+      .anim__dot-circle {
+        width: 10px;
+        height: 10px;
+        border: 1.5px solid var(--border-strong);
+        background: var(--surface);
+        border-radius: 50%;
+        transition: all 200ms ease;
+      }
+
+      .anim__dot:hover .anim__dot-circle {
+        border-color: var(--gold);
+      }
+
+      .anim__dot--done .anim__dot-circle {
+        border-color: var(--gold);
+        background: var(--gold);
+      }
+
+      .anim__dot--current .anim__dot-circle {
+        border-color: var(--gold);
+        background: var(--gold);
+        transform: scale(1.6);
+        animation: pulse-gold 1.6s ease-out infinite;
+      }
+
+      .anim__dot-label {
+        font-size: 9px;
+        font-family: var(--tx-mono);
+        color: var(--text-dim);
+        white-space: nowrap;
+      }
+
+      .anim__dot--current .anim__dot-label {
+        color: var(--gold);
+      }
+
+      .anim__dot--done .anim__dot-label {
+        color: var(--text-2);
+      }
+
+      @keyframes pulse-gold {
+        0% {
+          box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 50%, transparent);
+        }
+        100% {
+          box-shadow: 0 0 0 6px transparent;
+        }
+      }
+
+      /* controls */
+      .anim__ctl {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding-left: 12px;
+        margin-left: 12px;
+        border-left: 1px solid var(--border);
+      }
+
+      /* ─── 插画 SVG 通用样式 ────────────────────────────────── */
+      .ill__line {
+        stroke: var(--illust-stroke);
+        fill: none;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .ill__fill {
+        fill: var(--illust-fill);
+        stroke: var(--illust-stroke);
+        stroke-width: 1.5;
+      }
+      .ill__gold {
+        stroke: var(--gold);
+        fill: none;
+        stroke-width: 1.5;
+      }
+      .ill__gold-fill {
+        fill: var(--gold);
+      }
+      .ill__gold-soft {
+        fill: color-mix(in oklab, var(--gold) 20%, transparent);
+        stroke: var(--gold);
+        stroke-width: 1.5;
+      }
+      .ill__text {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        fill: var(--text-2);
+      }
+      .ill__text-gold {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        fill: var(--gold);
+      }
+      .ill__dim {
+        opacity: 0.4;
+      }
+
+      /* per-step animations */
+      @keyframes drift-in {
+        0% { transform: translateX(-30px); opacity: 0; }
+        60% { opacity: 1; }
+        100% { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes drop-in {
+        0% { transform: translateY(-20px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      @keyframes pop-in {
+        0% { transform: scale(0); opacity: 0; }
+        70% { transform: scale(1.1); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes draw {
+        from { stroke-dashoffset: 100; }
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes glow {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-2px); }
+        75% { transform: translateX(2px); }
+      }
+      @keyframes fade-x {
+        0%, 80% { opacity: 1; }
+        100% { opacity: 0.2; }
+      }
+
+      .ill__anim-drift { animation: drift-in 800ms ease-out forwards; }
+      .ill__anim-drop  { animation: drop-in 600ms ease-out forwards; }
+      .ill__anim-pop   { animation: pop-in 500ms cubic-bezier(0.4, 0, 0.2, 1.3) forwards; }
+      .ill__anim-glow  { animation: glow 1.8s ease-in-out infinite; }
+      .ill__anim-shake { animation: shake 400ms ease-in-out 3; }
+
+      /* lang */
+      [data-lang='en'] [data-show-lang='zh'] { display: none; }
+      [data-lang='zh'] [data-show-lang='en'] { display: none; }
+
+      /* lang toggle pill */
+      .topbar {
+        max-width: 1080px;
+        margin: 16px auto 0;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid var(--border);
+        padding: 2px;
+        border-radius: 4px;
+      }
+      .toggle button {
+        height: 24px;
+        padding: 0 10px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+        border-radius: 2px;
+      }
+      .toggle button[aria-pressed='true'] {
+        background: var(--surface-2);
+        color: var(--gold);
+      }
+
+      .footnote {
+        max-width: 1080px;
+        margin: 16px auto 32px;
+        padding: 0 24px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+      .footnote kbd {
+        padding: 1px 5px;
+        border: 1px solid var(--border-strong);
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        margin: 0 1px;
+      }
+
+      @media (max-width: 760px) {
+        .demo-page-grid { grid-template-columns: 1fr; }
+        .demo-aside { display: none; }
+        .anim__body { grid-template-columns: 1fr; gap: 12px; }
+        .anim__illust { min-height: 160px; }
+        .anim__title { font-size: 18px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="topbar">
+      <div class="toggle" role="group" aria-label="Language">
+        <button data-lang-btn="zh" aria-pressed="true">中</button>
+        <button data-lang-btn="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="toggle" role="group" aria-label="Theme">
+        <button data-theme-btn="dark" aria-pressed="true" data-show-lang="zh">深色</button>
+        <button data-theme-btn="dark" aria-pressed="true" data-show-lang="en">DARK</button>
+        <button data-theme-btn="light" aria-pressed="false" data-show-lang="zh">浅色</button>
+        <button data-theme-btn="light" aria-pressed="false" data-show-lang="en">LIGHT</button>
+      </div>
+    </div>
+
+    <div class="demo-wrapper">
+      <div class="demo-page">
+        <div class="demo-crumb">
+          <span data-show-lang="zh">第 2 步 / 共 3 步 · onboarding</span>
+          <span data-show-lang="en">STEP 2 / 3 · ONBOARDING</span>
+        </div>
+        <h1 class="demo-h">
+          <span data-show-lang="zh">Pipeline LLM 配置</span>
+          <span data-show-lang="en">Pipeline LLM setup</span>
+        </h1>
+        <p class="demo-sub">
+          <span data-show-lang="zh"
+            >下面这块小动画就是本次要做的。它解释 pipeline 每一步在帮你做什么、为什么需要它 ——
+            让用户在配置 LLM provider 之前先理解每一步的意义。</span
+          >
+          <span data-show-lang="en"
+            >The compact animation below is what this file demos. It explains what each
+            pipeline stage does for you and why it matters — so users get the value of
+            each stage before they pick a provider.</span
+          >
+        </p>
+
+        <div class="demo-page-grid">
+          <div>
+            <div class="demo-skeleton">
+              <span data-show-lang="zh">▢ Provider 列表（占位）</span>
+              <span data-show-lang="en">▢ Provider list (placeholder)</span>
+              <div class="ph-bar"></div>
+              <div class="ph-bar mid"></div>
+            </div>
+
+            <!-- ★ 真正的动画区域 ★ -->
+            <section class="anim" id="anim" aria-label="Pipeline 介绍动画">
+              <header class="anim__hat">
+                <div class="anim__hat-l">
+                  <svg class="anim__hat-mark" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M2 6 Q2 12 8 12 Q14 12 14 6 L13 5 L3 5 Z" fill="none" stroke="var(--gold)" stroke-width="1.5"/>
+                    <circle cx="6" cy="9" r="0.9" fill="var(--gold)"/>
+                    <circle cx="9.5" cy="8.5" r="0.7" fill="var(--gold)"/>
+                  </svg>
+                  <span class="anim__hat-title">
+                    <span data-show-lang="zh">Pipeline 在帮你做什么</span>
+                    <span data-show-lang="en">What this pipeline does for you</span>
+                  </span>
+                  <span class="anim__hat-sub">
+                    <span data-show-lang="zh">· 共 8 步</span>
+                    <span data-show-lang="en">· 8 stages</span>
+                  </span>
+                </div>
+                <div class="anim__hat-r">
+                  <button class="icon-btn" id="btn-prev" aria-label="Prev">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3 L5 7 L9 11"/></svg>
+                  </button>
+                  <button class="icon-btn" id="btn-play" aria-label="Play/Pause" aria-pressed="true">
+                    <svg width="14" height="14" viewBox="0 0 14 14" id="play-svg" fill="currentColor"><rect x="3" y="2.5" width="3" height="9"/><rect x="8" y="2.5" width="3" height="9"/></svg>
+                  </button>
+                  <button class="icon-btn" id="btn-next" aria-label="Next">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3 L9 7 L5 11"/></svg>
+                  </button>
+                </div>
+              </header>
+
+              <div class="anim__body">
+                <div class="anim__illust" id="illust"></div>
+                <div class="anim__copy" id="copy">
+                  <div class="anim__step-num">
+                    <span data-show-lang="zh">第 <strong id="num-zh">1</strong> 步 / 共 8 步</span>
+                    <span data-show-lang="en">STAGE <strong id="num-en">1</strong> / 8</span>
+                  </div>
+                  <h2 class="anim__title">
+                    <span id="title-zh" data-show-lang="zh"></span>
+                    <span id="title-en" data-show-lang="en"></span>
+                    <span class="anim__opt-tag" id="opt-tag" hidden>
+                      <span data-show-lang="zh">可选</span>
+                      <span data-show-lang="en">OPTIONAL</span>
+                    </span>
+                  </h2>
+                  <div class="anim__rows">
+                    <div class="anim__row">
+                      <span class="anim__row-key">
+                        <span data-show-lang="zh">你得到</span>
+                        <span data-show-lang="en">YOU GET</span>
+                      </span>
+                      <span class="anim__row-val" id="get-zh" data-show-lang="zh"></span>
+                      <span class="anim__row-val" id="get-en" data-show-lang="en"></span>
+                    </div>
+                    <div class="anim__row">
+                      <span class="anim__row-key dim">
+                        <span data-show-lang="zh">为什么要</span>
+                        <span data-show-lang="en">WHY</span>
+                      </span>
+                      <span class="anim__row-val muted" id="why-zh" data-show-lang="zh"></span>
+                      <span class="anim__row-val muted" id="why-en" data-show-lang="en"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="anim__timeline">
+                <div class="anim__rail" id="rail" role="tablist"></div>
+              </div>
+            </section>
+
+            <div class="demo-skeleton">
+              <span data-show-lang="zh">▢ Step 卡片（占位）</span>
+              <span data-show-lang="en">▢ Step cards (placeholder)</span>
+              <div class="ph-bar short"></div>
+              <div class="ph-bar mid"></div>
+              <div class="ph-bar"></div>
+            </div>
+          </div>
+
+          <aside class="demo-aside">
+            <span data-show-lang="zh">已配步骤概览（占位）</span>
+            <span data-show-lang="en">Configured overview</span>
+            <div class="ph-bar"></div>
+            <div class="ph-bar"></div>
+            <div class="ph-bar"></div>
+            <div class="ph-bar"></div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <p class="footnote">
+      <span data-show-lang="zh">
+        嵌入说明：实际放到 onboarding 时只取 <code>.anim</code> 那块（约 760 × 290 px），
+        外层 mock 仅用来给你看视觉位置。
+        快捷键：<kbd>←</kbd> <kbd>→</kbd> 切换 · <kbd>Space</kbd> 播放/暂停 · <kbd>1-8</kbd> 跳转
+      </span>
+      <span data-show-lang="en">
+        Note: when embedded into onboarding, only the <code>.anim</code> block (≈ 760 × 290 px)
+        is used. The outer mock is here purely to show how it sits on the page.
+        Keys: <kbd>←</kbd> <kbd>→</kbd> step · <kbd>Space</kbd> play/pause · <kbd>1-8</kbd> jump
+      </span>
+    </p>
+
+    <script>
+      // 8 步内容 — 完全产品视角，只说"你得到 / 为什么要"，
+      // 不出现 fact / opinion / entity / category / FTS5 / SQL 等技术词。
+      const STEPS = [
+        {
+          key: 'collect',
+          titleZh: '读懂你扔进来的内容',
+          titleEn: 'Understand what you threw in',
+          getZh: '一个链接、一段文字、或者一个 GitHub 仓库 — 复制粘贴进来，就能被读完。',
+          getEn: 'Drop a link, a chunk of text, or a GitHub repo — paste it in and it gets read end-to-end.',
+          whyZh: '不同来源格式天差地别（网页、PDF、API…），你只管扔进来，剩下的不用操心。',
+          whyEn: "Sources come in wildly different shapes (web pages, PDFs, APIs…). You just paste — the rest isn't your problem.",
+          renderIllust: illustCollect,
+        },
+        {
+          key: 'classify',
+          titleZh: '自动归类',
+          titleEn: 'Auto-tag by topic',
+          getZh: '每条内容自动落到合适的类目里 ——「AI 模型」「招聘」「政策」之类。',
+          getEn: 'Every piece lands in the right bucket — "AI models", "hiring", "policy" and so on.',
+          whyZh: '信息一多就乱。归类好之后想找某类东西，看一个抽屉就够了，不用手动建文件夹。',
+          whyEn: 'Volume gets messy fast. With everything pre-sorted, browsing one drawer beats hunting through folders you forgot to make.',
+          renderIllust: illustClassify,
+        },
+        {
+          key: 'extract',
+          titleZh: '提炼出几条要点',
+          titleEn: 'Boil it down to a few points',
+          getZh: '一篇长文章被浓缩成几条核心要点。',
+          getEn: 'A long article gets condensed into a handful of key points.',
+          whyZh: '以后你不用重读原文 —— 扫几条要点就能想起来；问 AI 时它也直接看要点更准。',
+          whyEn: "Later you don't have to re-read — a quick scan of the points jogs your memory, and the AI answers from those points more accurately.",
+          renderIllust: illustExtract,
+        },
+        {
+          key: 'match',
+          titleZh: '认出人和事物',
+          titleEn: 'Recognise people and things',
+          getZh: '要点会被挂到具体的人 / 公司 / 产品上 —— 比如这条是关于 OpenAI 的、那条是关于 GPT-5 的。',
+          getEn: 'Points get attached to specific people, companies, or products — this one is about OpenAI, that one about GPT-5.',
+          whyZh: '想看一个公司 / 产品的全部信息，直接搜名字就行，不用记每条信息出自哪篇文章。',
+          whyEn: 'To see everything about a company or product, just search the name — no need to remember which article each fact came from.',
+          renderIllust: illustMatch,
+        },
+        {
+          key: 'relate',
+          titleZh: '理清关系网',
+          titleEn: 'Draw the connections',
+          optional: true,
+          getZh: '知道这些人 / 公司 / 产品之间什么关系（A 发布了 B、X 和 Y 是竞品…）。',
+          getEn: "Know how these people / companies / products relate to each other (A launched B, X and Y compete…).",
+          whyZh: '单条信息是散的；有了关系网，你能从一个对象顺藤摸瓜找到相关的，看到全貌。',
+          whyEn: 'Isolated facts are dots. With connections, you can hop between related things and see the bigger picture.',
+          renderIllust: illustRelate,
+        },
+        {
+          key: 'compare',
+          titleZh: '去重',
+          titleEn: 'Drop duplicates',
+          getZh: '同一件事被提到再多次，库里也只记一份。',
+          getEn: 'No matter how many times the same fact gets repeated, your library keeps just one copy.',
+          whyZh: '不然库里全是重复内容，搜起来像翻垃圾堆。',
+          whyEn: 'Otherwise your library fills up with copies and searching feels like sifting through clutter.',
+          renderIllust: illustCompare,
+        },
+        {
+          key: 'verify',
+          titleZh: '过滤胡说八道',
+          titleEn: 'Filter the made-up stuff',
+          optional: true,
+          getZh: '剔除 AI 自己编的、原文里其实没说过的内容。',
+          getEn: 'Strip out anything the AI invented that isn\'t actually in the source.',
+          whyZh: '知识库要可信。不开这步偶尔会漏一两条幻觉进库 —— 想要更稳就开它。',
+          whyEn: "Your library needs to be trustworthy. Without this, an occasional hallucination slips through — flip it on if precision matters.",
+          renderIllust: illustVerify,
+        },
+        {
+          key: 'store',
+          titleZh: '存进你的知识库',
+          titleEn: 'Park it in your library',
+          getZh: '所有处理好的内容进库，可以随时搜、可以问、可以回顾。',
+          getEn: 'Everything processed gets parked in your library — searchable, askable, browsable.',
+          whyZh: '所有东西在一个地方。问「我之前看的关于 GPT-5 的内容是什么？」立刻能查到。',
+          whyEn: 'Everything in one place. Ask "what did I read about GPT-5?" and it shows up instantly.',
+          renderIllust: illustStore,
+        },
+      ];
+
+      // ─────────────────────────────────────────────────────────
+      // 插画 — 每个 step 一个 SVG，强调"产品比喻"，不展示中间数据
+      // ─────────────────────────────────────────────────────────
+
+      function svg(inner, viewBox = '0 0 240 180') {
+        return `<svg viewBox="${viewBox}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+      }
+
+      // 1. 收集 — 不同形状的内容（链接卡片 / 文字段 / 代码块）流入一个收件容器
+      function illustCollect() {
+        return svg(`
+          <!-- 三种来源从左飘进来 -->
+          <g class="ill__anim-drift" style="animation-delay: 0ms">
+            <rect x="10" y="20" width="60" height="22" rx="3" class="ill__fill"/>
+            <line x1="18" y1="28" x2="62" y2="28" class="ill__line" stroke-dasharray="2 2"/>
+            <line x1="18" y1="34" x2="48" y2="34" class="ill__line" stroke-dasharray="2 2"/>
+            <text x="14" y="16" class="ill__text">link</text>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay: 220ms">
+            <rect x="10" y="60" width="60" height="22" rx="3" class="ill__fill"/>
+            <line x1="18" y1="68" x2="62" y2="68" class="ill__line"/>
+            <line x1="18" y1="74" x2="55" y2="74" class="ill__line"/>
+            <text x="14" y="56" class="ill__text">text</text>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay: 440ms">
+            <rect x="10" y="100" width="60" height="22" rx="3" class="ill__fill"/>
+            <text x="20" y="115" class="ill__text" style="font-size:9px">{ }</text>
+            <text x="14" y="96" class="ill__text">repo</text>
+          </g>
+
+          <!-- 流向箭头 -->
+          <g class="ill__anim-glow">
+            <path d="M75 75 L130 75" class="ill__gold" stroke-dasharray="4 3"/>
+            <path d="M125 71 L130 75 L125 79" class="ill__gold"/>
+          </g>
+
+          <!-- 收件容器 (inbox / hopper) -->
+          <g>
+            <path d="M140 50 L220 50 L210 130 L150 130 Z" class="ill__fill"/>
+            <line x1="140" y1="50" x2="220" y2="50" class="ill__gold" stroke-width="2"/>
+            <!-- 处理过后的统一 sheet 在容器内 -->
+            <g class="ill__anim-pop" style="animation-delay: 800ms; transform-origin: 180px 90px">
+              <rect x="158" y="68" width="44" height="50" rx="2" fill="var(--surface)" stroke="var(--gold)" stroke-width="1.5"/>
+              <line x1="164" y1="78" x2="196" y2="78" class="ill__gold"/>
+              <line x1="164" y1="86" x2="190" y2="86" class="ill__gold" opacity="0.6"/>
+              <line x1="164" y1="94" x2="194" y2="94" class="ill__gold" opacity="0.6"/>
+              <line x1="164" y1="102" x2="186" y2="102" class="ill__gold" opacity="0.6"/>
+            </g>
+            <text x="180" y="148" text-anchor="middle" class="ill__text-gold">all formats</text>
+          </g>
+        `);
+      }
+
+      // 2. 分类 — 一张卡片穿过分类器，落到带标签的多个抽屉
+      function illustClassify() {
+        return svg(`
+          <!-- input card -->
+          <g class="ill__anim-drift">
+            <rect x="14" y="70" width="44" height="32" rx="3" class="ill__fill"/>
+            <line x1="20" y1="80" x2="52" y2="80" class="ill__line"/>
+            <line x1="20" y1="86" x2="46" y2="86" class="ill__line"/>
+            <line x1="20" y1="92" x2="50" y2="92" class="ill__line"/>
+          </g>
+
+          <!-- 分类器: 棱形 -->
+          <g>
+            <path d="M85 86 L105 70 L125 86 L105 102 Z" class="ill__gold-soft"/>
+            <text x="105" y="89" text-anchor="middle" class="ill__text-gold" style="font-size:9px">tag</text>
+          </g>
+
+          <!-- 三个出口 -->
+          <path d="M125 86 L155 50 M125 86 L155 86 M125 86 L155 122" class="ill__line" stroke-dasharray="2 2"/>
+
+          <!-- 抽屉 × 3，每个带不同标签 -->
+          <g class="ill__anim-pop" style="animation-delay: 600ms; transform-origin: 195px 50px">
+            <rect x="160" y="38" width="68" height="24" rx="2" class="ill__fill"/>
+            <rect x="164" y="42" width="3" height="16" fill="var(--gold)"/>
+            <text x="172" y="54" class="ill__text-gold" style="font-size:9px">AI 模型</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 800ms; transform-origin: 195px 86px">
+            <rect x="160" y="74" width="68" height="24" rx="2" class="ill__fill"/>
+            <rect x="164" y="78" width="3" height="16" fill="var(--gold)" opacity="0.6"/>
+            <text x="172" y="90" class="ill__text" style="font-size:9px">招聘</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 1000ms; transform-origin: 195px 122px">
+            <rect x="160" y="110" width="68" height="24" rx="2" class="ill__fill"/>
+            <rect x="164" y="114" width="3" height="16" fill="var(--gold)" opacity="0.6"/>
+            <text x="172" y="126" class="ill__text" style="font-size:9px">政策</text>
+          </g>
+        `);
+      }
+
+      // 3. 抽取 — 一张长文档变成 3 张 sticky note
+      function illustExtract() {
+        return svg(`
+          <!-- 长文档 (左) -->
+          <g class="ill__anim-drift">
+            <rect x="14" y="20" width="68" height="140" rx="3" class="ill__fill"/>
+            <line x1="22" y1="34" x2="74" y2="34" class="ill__line" opacity="0.7"/>
+            <line x1="22" y1="42" x2="68" y2="42" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="50" x2="72" y2="50" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="58" x2="60" y2="58" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="70" x2="74" y2="70" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="78" x2="66" y2="78" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="86" x2="74" y2="86" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="94" x2="58" y2="94" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="106" x2="74" y2="106" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="114" x2="68" y2="114" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="122" x2="74" y2="122" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="130" x2="62" y2="130" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="142" x2="74" y2="142" class="ill__line" opacity="0.5"/>
+            <line x1="22" y1="150" x2="56" y2="150" class="ill__line" opacity="0.5"/>
+          </g>
+
+          <!-- 收紧箭头 -->
+          <g class="ill__anim-glow">
+            <path d="M88 90 L130 90" class="ill__gold" stroke-dasharray="4 3"/>
+            <path d="M125 86 L130 90 L125 94" class="ill__gold"/>
+          </g>
+
+          <!-- 3 张便签 (右) -->
+          <g class="ill__anim-pop" style="animation-delay: 600ms; transform-origin: 175px 40px">
+            <rect x="140" y="28" width="78" height="30" rx="2" class="ill__gold-soft"/>
+            <line x1="148" y1="40" x2="208" y2="40" class="ill__gold"/>
+            <line x1="148" y1="48" x2="200" y2="48" class="ill__gold" opacity="0.7"/>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 850ms; transform-origin: 175px 90px">
+            <rect x="140" y="78" width="78" height="30" rx="2" class="ill__gold-soft"/>
+            <line x1="148" y1="90" x2="208" y2="90" class="ill__gold"/>
+            <line x1="148" y1="98" x2="194" y2="98" class="ill__gold" opacity="0.7"/>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 1100ms; transform-origin: 175px 140px">
+            <rect x="140" y="128" width="78" height="30" rx="2" class="ill__gold-soft"/>
+            <line x1="148" y1="140" x2="208" y2="140" class="ill__gold"/>
+            <line x1="148" y1="148" x2="202" y2="148" class="ill__gold" opacity="0.7"/>
+          </g>
+        `);
+      }
+
+      // 4. 匹配 — 便签被贴到代表"对象"的圆形/档案夹
+      function illustMatch() {
+        return svg(`
+          <!-- 便签 (左侧) -->
+          <g>
+            <rect x="10" y="34" width="56" height="20" rx="2" class="ill__gold-soft"/>
+            <line x1="16" y1="44" x2="60" y2="44" class="ill__gold"/>
+          </g>
+          <g>
+            <rect x="10" y="80" width="56" height="20" rx="2" class="ill__gold-soft"/>
+            <line x1="16" y1="90" x2="60" y2="90" class="ill__gold"/>
+          </g>
+          <g>
+            <rect x="10" y="126" width="56" height="20" rx="2" class="ill__gold-soft"/>
+            <line x1="16" y1="136" x2="60" y2="136" class="ill__gold"/>
+          </g>
+
+          <!-- 连线指向对象 -->
+          <g class="ill__anim-glow">
+            <path d="M68 44 Q110 44 130 60" class="ill__gold" stroke-dasharray="3 3"/>
+            <path d="M68 90 Q110 90 130 92" class="ill__gold" stroke-dasharray="3 3"/>
+            <path d="M68 136 Q110 136 130 130" class="ill__gold" stroke-dasharray="3 3"/>
+          </g>
+
+          <!-- 两个对象 (右侧) — 一个圆代表人，一个矩形代表公司 -->
+          <g class="ill__anim-pop" style="animation-delay: 400ms; transform-origin: 170px 56px">
+            <circle cx="170" cy="56" r="22" class="ill__fill"/>
+            <circle cx="170" cy="50" r="6" class="ill__gold"/>
+            <path d="M158 70 Q170 60 182 70" class="ill__gold"/>
+            <text x="170" y="92" text-anchor="middle" class="ill__text-gold">OpenAI</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 600ms; transform-origin: 170px 130px">
+            <rect x="148" y="110" width="44" height="32" rx="3" class="ill__fill"/>
+            <rect x="155" y="118" width="30" height="3" fill="var(--gold)"/>
+            <rect x="155" y="124" width="22" height="3" fill="var(--gold)" opacity="0.6"/>
+            <rect x="155" y="130" width="26" height="3" fill="var(--gold)" opacity="0.6"/>
+            <text x="170" y="156" text-anchor="middle" class="ill__text-gold">GPT-5</text>
+          </g>
+        `);
+      }
+
+      // 5. 关系 — 4 个节点 + 连线，形成关系网
+      function illustRelate() {
+        return svg(`
+          <!-- 4 节点 -->
+          <g class="ill__anim-pop" style="animation-delay: 0ms; transform-origin: 60px 50px">
+            <circle cx="60" cy="50" r="20" class="ill__fill"/>
+            <text x="60" y="54" text-anchor="middle" class="ill__text-gold">A</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 200ms; transform-origin: 180px 50px">
+            <circle cx="180" cy="50" r="20" class="ill__fill"/>
+            <text x="180" y="54" text-anchor="middle" class="ill__text-gold">B</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 400ms; transform-origin: 60px 130px">
+            <circle cx="60" cy="130" r="20" class="ill__fill"/>
+            <text x="60" y="134" text-anchor="middle" class="ill__text-gold">C</text>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 600ms; transform-origin: 180px 130px">
+            <circle cx="180" cy="130" r="20" class="ill__fill"/>
+            <text x="180" y="134" text-anchor="middle" class="ill__text-gold">D</text>
+          </g>
+
+          <!-- 连线 -->
+          <g style="opacity:0; animation: drop-in 600ms ease-out 800ms forwards">
+            <line x1="80" y1="50" x2="160" y2="50" class="ill__gold"/>
+            <text x="120" y="42" text-anchor="middle" class="ill__text" style="font-size:8px">竞品</text>
+          </g>
+          <g style="opacity:0; animation: drop-in 600ms ease-out 1000ms forwards">
+            <line x1="60" y1="70" x2="60" y2="110" class="ill__gold"/>
+            <text x="44" y="92" class="ill__text" style="font-size:8px">发布</text>
+          </g>
+          <g style="opacity:0; animation: drop-in 600ms ease-out 1200ms forwards">
+            <line x1="76" y1="62" x2="166" y2="118" class="ill__gold" stroke-dasharray="3 3"/>
+          </g>
+          <g style="opacity:0; animation: drop-in 600ms ease-out 1400ms forwards">
+            <line x1="180" y1="70" x2="180" y2="110" class="ill__gold"/>
+            <text x="186" y="92" class="ill__text" style="font-size:8px">合作</text>
+          </g>
+        `);
+      }
+
+      // 6. 去重 — 三张相同的卡片，第二三张被划掉
+      function illustCompare() {
+        return svg(`
+          <!-- 第一张 (保留) -->
+          <g class="ill__anim-drop" style="animation-delay: 0ms">
+            <rect x="20" y="60" width="60" height="60" rx="3" class="ill__gold-soft"/>
+            <line x1="28" y1="76" x2="72" y2="76" class="ill__gold"/>
+            <line x1="28" y1="84" x2="64" y2="84" class="ill__gold" opacity="0.7"/>
+            <line x1="28" y1="92" x2="68" y2="92" class="ill__gold" opacity="0.7"/>
+            <text x="50" y="138" text-anchor="middle" class="ill__text-gold" style="font-size:9px">保留</text>
+          </g>
+
+          <!-- 第二张 (重复 - 划掉) -->
+          <g class="ill__anim-drop" style="animation-delay: 250ms; opacity: 0.4">
+            <rect x="90" y="60" width="60" height="60" rx="3" class="ill__fill"/>
+            <line x1="98" y1="76" x2="142" y2="76" class="ill__line"/>
+            <line x1="98" y1="84" x2="134" y2="84" class="ill__line" opacity="0.7"/>
+            <line x1="98" y1="92" x2="138" y2="92" class="ill__line" opacity="0.7"/>
+            <line x1="90" y1="60" x2="150" y2="120" stroke="var(--text-dim)" stroke-width="1.5"/>
+            <text x="120" y="138" text-anchor="middle" class="ill__text" style="font-size:9px">重复</text>
+          </g>
+
+          <!-- 第三张 (重复 - 划掉) -->
+          <g class="ill__anim-drop" style="animation-delay: 500ms; opacity: 0.4">
+            <rect x="160" y="60" width="60" height="60" rx="3" class="ill__fill"/>
+            <line x1="168" y1="76" x2="212" y2="76" class="ill__line"/>
+            <line x1="168" y1="84" x2="204" y2="84" class="ill__line" opacity="0.7"/>
+            <line x1="168" y1="92" x2="208" y2="92" class="ill__line" opacity="0.7"/>
+            <line x1="160" y1="60" x2="220" y2="120" stroke="var(--text-dim)" stroke-width="1.5"/>
+            <text x="190" y="138" text-anchor="middle" class="ill__text" style="font-size:9px">重复</text>
+          </g>
+
+          <!-- 顶部说明 -->
+          <text x="120" y="36" text-anchor="middle" class="ill__text" style="font-size:9px">同一件事，不同来源都在说</text>
+        `);
+      }
+
+      // 7. 校验 — 卡片排队过一个"checkpoint"，✓ 通过 ✗ 拒
+      function illustVerify() {
+        return svg(`
+          <!-- 三张卡片排队进 checkpoint -->
+          <g class="ill__anim-drift" style="animation-delay: 0ms">
+            <rect x="10" y="44" width="40" height="28" rx="2" class="ill__gold-soft"/>
+            <line x1="16" y1="56" x2="44" y2="56" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay: 200ms">
+            <rect x="10" y="84" width="40" height="28" rx="2" class="ill__gold-soft"/>
+            <line x1="16" y1="96" x2="44" y2="96" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay: 400ms">
+            <rect x="10" y="124" width="40" height="28" rx="2" class="ill__fill"/>
+            <line x1="16" y1="136" x2="44" y2="136" class="ill__line"/>
+          </g>
+
+          <!-- checkpoint：竖直栅栏 -->
+          <line x1="78" y1="20" x2="78" y2="170" class="ill__gold" stroke-dasharray="4 4"/>
+          <text x="78" y="14" text-anchor="middle" class="ill__text-gold" style="font-size:8px">CHECK</text>
+
+          <!-- 通过 / 拒 标记 -->
+          <g class="ill__anim-pop" style="animation-delay: 800ms; transform-origin: 130px 58px">
+            <circle cx="130" cy="58" r="14" fill="none" stroke="var(--gold)" stroke-width="2"/>
+            <path d="M124 58 L128 62 L136 54" stroke="var(--gold)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 1000ms; transform-origin: 130px 98px">
+            <circle cx="130" cy="98" r="14" fill="none" stroke="var(--gold)" stroke-width="2"/>
+            <path d="M124 98 L128 102 L136 94" stroke="var(--gold)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 1200ms; transform-origin: 130px 138px">
+            <circle cx="130" cy="138" r="14" fill="none" stroke="var(--text-dim)" stroke-width="2"/>
+            <path d="M124 132 L136 144 M136 132 L124 144" stroke="var(--text-dim)" stroke-width="2.5" stroke-linecap="round"/>
+          </g>
+
+          <!-- 通过的卡片右侧出现 -->
+          <g class="ill__anim-pop" style="animation-delay: 1400ms; transform-origin: 195px 58px">
+            <rect x="170" y="44" width="48" height="28" rx="2" class="ill__gold-soft"/>
+            <line x1="178" y1="56" x2="212" y2="56" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-pop" style="animation-delay: 1600ms; transform-origin: 195px 98px">
+            <rect x="170" y="84" width="48" height="28" rx="2" class="ill__gold-soft"/>
+            <line x1="178" y1="96" x2="212" y2="96" class="ill__gold"/>
+          </g>
+          <g style="opacity: 0.3">
+            <text x="194" y="142" text-anchor="middle" class="ill__text" style="font-size:8px">编造的</text>
+            <text x="194" y="152" text-anchor="middle" class="ill__text" style="font-size:8px">扔掉</text>
+          </g>
+        `);
+      }
+
+      // 8. 入库 — 卡片整齐归位到一个"图书馆/档案柜"，下方搜索框示意
+      function illustStore() {
+        return svg(`
+          <!-- 上方：卡片飞入 -->
+          <g class="ill__anim-drift">
+            <rect x="20" y="20" width="40" height="22" rx="2" class="ill__gold-soft"/>
+            <line x1="26" y1="32" x2="56" y2="32" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay:200ms">
+            <rect x="68" y="20" width="40" height="22" rx="2" class="ill__gold-soft"/>
+            <line x1="74" y1="32" x2="104" y2="32" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay:400ms">
+            <rect x="116" y="20" width="40" height="22" rx="2" class="ill__gold-soft"/>
+            <line x1="122" y1="32" x2="152" y2="32" class="ill__gold"/>
+          </g>
+          <g class="ill__anim-drift" style="animation-delay:600ms">
+            <rect x="164" y="20" width="40" height="22" rx="2" class="ill__gold-soft"/>
+            <line x1="170" y1="32" x2="200" y2="32" class="ill__gold"/>
+          </g>
+
+          <!-- 下落箭头 -->
+          <path d="M120 50 L120 75" class="ill__gold" stroke-dasharray="3 3"/>
+          <path d="M115 70 L120 76 L125 70" class="ill__gold"/>
+
+          <!-- 档案柜 -->
+          <g class="ill__anim-pop" style="animation-delay: 700ms; transform-origin: 120px 110px">
+            <rect x="34" y="80" width="172" height="60" rx="4" class="ill__fill"/>
+            <line x1="34" y1="100" x2="206" y2="100" class="ill__line"/>
+            <line x1="34" y1="120" x2="206" y2="120" class="ill__line"/>
+
+            <!-- 抽屉把手 -->
+            <rect x="106" y="88" width="28" height="3" fill="var(--gold)"/>
+            <rect x="106" y="108" width="28" height="3" fill="var(--gold)" opacity="0.7"/>
+            <rect x="106" y="128" width="28" height="3" fill="var(--gold)" opacity="0.7"/>
+          </g>
+
+          <!-- 搜索框示意 -->
+          <g class="ill__anim-pop" style="animation-delay: 1100ms; transform-origin: 120px 160px">
+            <rect x="40" y="150" width="160" height="20" rx="10" fill="var(--surface)" stroke="var(--gold)" stroke-width="1.5"/>
+            <circle cx="54" cy="160" r="4" class="ill__gold"/>
+            <line x1="57" y1="163" x2="62" y2="168" class="ill__gold"/>
+            <text x="68" y="164" class="ill__text-gold" style="font-size:9px">搜你存过的内容…</text>
+          </g>
+        `);
+      }
+
+      // ─────────────────────────────────────────────────────────
+      // App
+      // ─────────────────────────────────────────────────────────
+      const $ = (id) => document.getElementById(id);
+      const state = {
+        idx: 0,
+        playing: true,
+        timer: null,
+        lang: 'zh',
+        theme: 'dark',
+      };
+
+      const refs = {
+        illust: $('illust'),
+        copy: $('copy'),
+        numZh: $('num-zh'),
+        numEn: $('num-en'),
+        titleZh: $('title-zh'),
+        titleEn: $('title-en'),
+        getZh: $('get-zh'),
+        getEn: $('get-en'),
+        whyZh: $('why-zh'),
+        whyEn: $('why-en'),
+        optTag: $('opt-tag'),
+        rail: $('rail'),
+        playBtn: $('btn-play'),
+        playSvg: $('play-svg'),
+      };
+
+      function buildRail() {
+        refs.rail.innerHTML = '';
+        STEPS.forEach((s, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'anim__dot';
+          btn.setAttribute('role', 'tab');
+          btn.setAttribute('data-idx', String(i));
+          btn.setAttribute(
+            'aria-label',
+            `${i + 1}. ${state.lang === 'zh' ? s.titleZh : s.titleEn}`
+          );
+          btn.innerHTML = `
+            <span class="anim__dot-circle"></span>
+            <span class="anim__dot-label">${i + 1}</span>
+          `;
+          btn.addEventListener('click', () => {
+            pause();
+            jump(i);
+          });
+          refs.rail.appendChild(btn);
+        });
+      }
+
+      function paint() {
+        const s = STEPS[state.idx];
+        refs.numZh.textContent = String(state.idx + 1);
+        refs.numEn.textContent = String(state.idx + 1);
+        refs.titleZh.textContent = s.titleZh;
+        refs.titleEn.textContent = s.titleEn;
+        refs.getZh.textContent = s.getZh;
+        refs.getEn.textContent = s.getEn;
+        refs.whyZh.textContent = s.whyZh;
+        refs.whyEn.textContent = s.whyEn;
+        refs.optTag.hidden = !s.optional;
+
+        // illust
+        refs.illust.classList.remove('is-changing');
+        refs.copy.classList.remove('is-changing');
+        // force reflow to restart animation
+        void refs.illust.offsetWidth;
+        refs.illust.innerHTML = s.renderIllust();
+        refs.illust.classList.add('is-changing');
+        refs.copy.classList.add('is-changing');
+
+        // dots
+        const dots = refs.rail.querySelectorAll('.anim__dot');
+        dots.forEach((d, i) => {
+          d.classList.toggle('anim__dot--current', i === state.idx);
+          d.classList.toggle('anim__dot--done', i < state.idx);
+          d.setAttribute(
+            'aria-selected',
+            i === state.idx ? 'true' : 'false'
+          );
+        });
+
+        // gold rail fill
+        const pct = state.idx / (STEPS.length - 1);
+        const old = $('rail-fill-style');
+        if (old) old.remove();
+        const styleEl = document.createElement('style');
+        styleEl.id = 'rail-fill-style';
+        styleEl.textContent = `.anim__rail::after { width: calc(${(pct * 100).toFixed(2)}% * (1 - 2/8)); }`;
+        document.head.appendChild(styleEl);
+      }
+
+      function jump(i) {
+        if (i < 0) i = 0;
+        if (i >= STEPS.length) i = STEPS.length - 1;
+        state.idx = i;
+        paint();
+      }
+
+      function next() {
+        if (state.idx >= STEPS.length - 1) {
+          // loop back to start
+          state.idx = -1;
+        }
+        jump(state.idx + 1);
+        return true;
+      }
+
+      function prev() {
+        jump(state.idx - 1);
+      }
+
+      function play() {
+        state.playing = true;
+        updatePlayBtn();
+        const tick = () => {
+          if (!state.playing) return;
+          next();
+          state.timer = setTimeout(tick, 5500);
+        };
+        state.timer = setTimeout(tick, 5500);
+      }
+
+      function pause() {
+        state.playing = false;
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+        updatePlayBtn();
+      }
+
+      function updatePlayBtn() {
+        refs.playBtn.setAttribute('aria-pressed', state.playing ? 'true' : 'false');
+        refs.playSvg.innerHTML = state.playing
+          ? '<rect x="3" y="2.5" width="3" height="9"/><rect x="8" y="2.5" width="3" height="9"/>'
+          : '<path d="M3.5 2 L11 7 L3.5 12 Z"/>';
+      }
+
+      function setLang(l) {
+        state.lang = l;
+        document.documentElement.dataset.lang = l;
+        document.documentElement.lang = l === 'zh' ? 'zh-CN' : 'en';
+        document
+          .querySelectorAll('[data-lang-btn]')
+          .forEach((b) =>
+            b.setAttribute('aria-pressed', b.dataset.langBtn === l ? 'true' : 'false')
+          );
+      }
+
+      function setTheme(t) {
+        state.theme = t;
+        document.documentElement.dataset.theme = t;
+        document
+          .querySelectorAll('[data-theme-btn]')
+          .forEach((b) =>
+            b.setAttribute('aria-pressed', b.dataset.themeBtn === t ? 'true' : 'false')
+          );
+      }
+
+      // wire
+      $('btn-prev').addEventListener('click', () => {
+        pause();
+        prev();
+      });
+      $('btn-next').addEventListener('click', () => {
+        pause();
+        next();
+      });
+      refs.playBtn.addEventListener('click', () => {
+        if (state.playing) pause();
+        else play();
+      });
+
+      document.querySelectorAll('[data-lang-btn]').forEach((b) =>
+        b.addEventListener('click', () => setLang(b.dataset.langBtn))
+      );
+      document.querySelectorAll('[data-theme-btn]').forEach((b) =>
+        b.addEventListener('click', () => setTheme(b.dataset.themeBtn))
+      );
+
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowRight') {
+          pause();
+          next();
+          e.preventDefault();
+        } else if (e.key === 'ArrowLeft') {
+          pause();
+          prev();
+          e.preventDefault();
+        } else if (e.key === ' ') {
+          if (state.playing) pause();
+          else play();
+          e.preventDefault();
+        } else if (/^[1-8]$/.test(e.key)) {
+          pause();
+          jump(parseInt(e.key, 10) - 1);
+          e.preventDefault();
+        }
+      });
+
+      buildRail();
+      paint();
+      play();
+    </script>
+  </body>
+</html>

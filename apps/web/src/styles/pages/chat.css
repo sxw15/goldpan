@@ -1,0 +1,1377 @@
+/* Chat — primary chat surface (full-bleed page), bubble + variants
+   (task / note / query / submit-confirm), result-* card sub-types
+   (content / action / clarify / entity / point / text / opinion),
+   default landing (greeting + 4 prompt chips + recent), header,
+   error / info banners. */
+
+/* ────────────────────────────────────────────────
+   Chat UI — surface + composer
+   ──────────────────────────────────────────────── */
+
+/* Chat surface — the page IS the chat, so the shell takes the whole main
+   column with no card edges. The thread and composer sub-headers each cap
+   their inner content at a readable max-width and centre it. */
+.gp-chat {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  background: var(--gp-bg);
+}
+
+.gp-chat__messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.25rem 0.75rem;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gp-chat__message-list {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.gp-chat__input-area {
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid var(--gp-border);
+  background: var(--gp-bg);
+}
+
+.gp-chat__form {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gp-chat__composer {
+  display: flex;
+  flex-direction: column;
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 14px;
+  transition:
+    border-color var(--gp-transition),
+    box-shadow var(--gp-transition);
+}
+
+.gp-chat__composer:focus-within {
+  border-color: var(--gp-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-accent) 16%, transparent);
+}
+
+.gp-chat__textarea {
+  width: 100%;
+  min-height: 1.5rem;
+  max-height: 13.75rem;
+  padding: 0.875rem 1rem 0.375rem;
+  border: 0;
+  background: transparent;
+  color: var(--gp-ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  resize: none;
+  outline: none;
+}
+
+.gp-chat__textarea::placeholder {
+  color: var(--gp-ink-faint);
+}
+
+.gp-chat__textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gp-chat__composer-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  padding: 0.375rem 0.5rem 0.375rem 0.625rem;
+}
+
+.gp-chat__attach {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--gp-ink-faint);
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--gp-transition);
+}
+
+.gp-chat__attach:hover {
+  background: var(--gp-hover-bg);
+  color: var(--gp-ink);
+}
+
+.gp-chat__hint {
+  flex: 1;
+  font-size: 0.7188rem;
+  color: var(--gp-ink-faint);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.gp-chat__hint kbd {
+  font-family: var(--gp-font-mono);
+  font-size: 0.6563rem;
+  padding: 1px 5px;
+  background: var(--gp-bg);
+  border: 1px solid var(--gp-border);
+  border-radius: 3px;
+  color: var(--gp-ink-muted);
+}
+
+.gp-chat__intent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  font-family: var(--gp-font-mono);
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+}
+
+.gp-chat__intent strong {
+  color: var(--gp-accent);
+  font-weight: 600;
+}
+
+.gp-chat__send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--gp-accent);
+  color: var(--gp-on-accent);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--gp-transition);
+  flex-shrink: 0;
+}
+
+.gp-chat__send-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gp-accent) 80%, black);
+  transform: translateY(-1px);
+}
+
+.gp-chat__send-btn:disabled {
+  background: var(--gp-border-strong);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gp-chat__keyboard-hint {
+  display: none;
+}
+
+/* ── Bubbles ──────────────────────────────────── */
+
+.gp-bubble {
+  display: flex;
+  gap: 0.625rem;
+  align-items: flex-start;
+  animation: gp-bubble-in 220ms ease-out;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-bubble {
+    animation: none;
+  }
+}
+
+/* Don't use margin-{left,right}: auto here — in a flex-column message list
+   that nukes align-items:stretch, shrinking the bubble row itself to content,
+   which then collides with the inner max-width and squeezes short text down
+   to min-content (one character per line). The whole row stretches; the
+   child uses justify-content to pick a side. */
+.gp-bubble--user {
+  justify-content: flex-end;
+}
+
+.gp-bubble--assistant {
+  justify-content: flex-start;
+}
+
+.gp-bubble__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--gp-accent);
+  color: var(--gp-on-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+  user-select: none;
+}
+
+.gp-bubble__content {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.gp-bubble--user .gp-bubble__content {
+  background: var(--gp-user-msg-bg);
+  color: var(--gp-user-msg-ink);
+  padding: 0.6875rem 0.9375rem;
+  border-radius: 16px 16px 4px 16px;
+  max-width: 540px;
+}
+
+.gp-bubble--assistant .gp-bubble__content {
+  background: var(--gp-surface);
+  color: var(--gp-ink);
+  border: 1px solid var(--gp-border);
+  padding: 0.75rem 0.9375rem;
+  border-radius: 4px 14px 14px 14px;
+  max-width: 600px;
+  min-width: 0;
+}
+
+.gp-bubble__pending {
+  font-style: italic;
+  color: var(--gp-ink-muted);
+}
+
+.gp-bubble__error {
+  color: var(--gp-danger, #dc2626);
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--gp-badge-err-bg);
+  border: 1px solid var(--gp-badge-err-border);
+  border-radius: 6px;
+}
+
+.gp-bubble__thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+}
+
+.gp-bubble__thinking::after {
+  content: "...";
+  animation: gp-dotPulse 1.4s infinite ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-bubble__thinking::after {
+    animation: none;
+  }
+  .gp-chat__messages {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── Query result card ────────────────────────── */
+
+.gp-query-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.gp-query-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gp-space-2);
+}
+
+.gp-query-card__title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gp-ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.gp-query-card__confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.gp-query-card__confidence-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.gp-query-card__confidence--high {
+  background: color-mix(in srgb, var(--gp-badge-ok-ink) 14%, transparent);
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-query-card__confidence--medium {
+  background: color-mix(in srgb, var(--gp-accent) 14%, transparent);
+  color: var(--gp-accent);
+}
+
+.gp-query-card__confidence--low {
+  background: color-mix(in srgb, var(--gp-badge-warn-ink) 14%, transparent);
+  color: var(--gp-badge-warn-ink);
+}
+
+.gp-query-card__confidence--no_data {
+  background: color-mix(in srgb, var(--gp-ink-muted) 14%, transparent);
+  color: var(--gp-ink-muted);
+}
+
+.gp-query-card__answer {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--gp-ink);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.gp-query-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding-top: 0.625rem;
+  border-top: 1px dashed var(--gp-border);
+}
+
+/* ── Submit confirm card ──────────────────────── */
+
+.gp-submit-confirm--accepted {
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-submit-confirm--duplicate {
+  color: var(--gp-badge-warn-ink);
+}
+
+.gp-submit-confirm--rejected {
+  color: var(--gp-danger);
+}
+
+.gp-submit-confirm__warnings {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--gp-badge-warn-ink);
+}
+
+/* ── Task bubble (rich submit result card) ───── */
+
+.gp-task-bubble {
+  width: 600px;
+  max-width: 100%;
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 4px 14px 14px 14px;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--gp-ink);
+}
+
+.gp-task-bubble__head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  cursor: pointer;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  user-select: none;
+}
+
+.gp-task-bubble__head:hover {
+  background: color-mix(in srgb, var(--gp-ink) 4%, transparent);
+}
+
+.gp-task-bubble__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gp-task-bubble--processing .gp-task-bubble__icon,
+.gp-task-bubble--pending .gp-task-bubble__icon {
+  background: var(--gp-accent-info-bg);
+  color: var(--gp-accent-info-ink);
+}
+
+.gp-task-bubble--done .gp-task-bubble__icon {
+  background: var(--gp-accent-success-bg);
+  color: var(--gp-accent-success-ink);
+}
+
+.gp-task-bubble--error .gp-task-bubble__icon {
+  background: var(--gp-accent-error-bg);
+  color: var(--gp-accent-error-ink);
+}
+
+.gp-task-bubble__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.gp-task-bubble__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gp-space-2);
+}
+
+.gp-task-bubble__type {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gp-ink-muted);
+}
+
+.gp-task-bubble--processing .gp-task-bubble__type,
+.gp-task-bubble--pending .gp-task-bubble__type {
+  color: var(--gp-accent-info-ink);
+}
+
+.gp-task-bubble--done .gp-task-bubble__type {
+  color: var(--gp-accent-success-ink);
+}
+
+.gp-task-bubble--error .gp-task-bubble__type {
+  color: var(--gp-accent-error-ink);
+}
+
+/* Duplicate variant — orange/amber accent, mirrors `.gp-submit-confirm--duplicate`
+ * tint so the badge color stays consistent with other "warning"-class chrome. */
+.gp-task-bubble--duplicate .gp-task-bubble__icon {
+  background: var(--gp-accent-warn-bg);
+  color: var(--gp-accent-warn-ink);
+}
+
+.gp-task-bubble__type--duplicate {
+  color: var(--gp-accent-warn-ink);
+}
+
+/* Static head — no chevron / no hover, used by the duplicate card which is
+ * not collapsible (everything fits in one short body). */
+.gp-task-bubble__head--static {
+  cursor: default;
+}
+
+.gp-task-bubble__head--static:hover {
+  background: transparent;
+}
+
+.gp-task-bubble__dup-msg {
+  margin: 0 0 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+}
+
+.gp-task-bubble__id {
+  font-family: var(--gp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+}
+
+.gp-task-bubble__title {
+  font-size: 0.84375rem;
+  font-weight: 500;
+  color: var(--gp-ink);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gp-task-bubble__chev {
+  color: var(--gp-ink-faint);
+  flex-shrink: 0;
+  display: inline-flex;
+  transition: transform 200ms;
+}
+
+.gp-task-bubble__chev.is-open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-task-bubble__chev {
+    transition: none;
+  }
+}
+
+/* Pipeline strip (proc / pending) */
+
+.gp-pipeline-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gp-space-1);
+  padding: 0.5rem 0.875rem 0.75rem;
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+  font-family: var(--gp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+}
+
+.gp-pipeline-strip__cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+}
+
+.gp-pipeline-strip__step {
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  background: var(--gp-bg);
+  border: 1px solid var(--gp-border);
+  white-space: nowrap;
+}
+
+.gp-pipeline-strip__step.is-done {
+  color: var(--gp-badge-ok-ink);
+  border-color: color-mix(in srgb, var(--gp-badge-ok-ink) 30%, transparent);
+  background: color-mix(in srgb, var(--gp-badge-ok-ink) 12%, transparent);
+}
+
+.gp-pipeline-strip__step.is-active {
+  color: var(--gp-accent-info-ink);
+  border-color: var(--gp-accent-info-border);
+  background: var(--gp-accent-info-bg);
+  font-weight: 600;
+  position: relative;
+}
+
+.gp-pipeline-strip__step.is-active::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  margin-right: 0.25rem;
+  vertical-align: 1px;
+  animation: gp-pipeline-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-pipeline-strip__step.is-active::before {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.gp-pipeline-strip__sep {
+  color: var(--gp-ink-faint);
+  opacity: 0.5;
+}
+
+/* Animated progress shimmer (proc only) */
+
+.gp-task-bubble__progress {
+  height: 3px;
+  margin: 0 0.875rem 0.75rem;
+  background: var(--gp-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.gp-task-bubble__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.85) 50%, transparent);
+  background-size: 200% 100%;
+  animation: gp-progress-shimmer 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-task-bubble__progress-fill {
+    animation: none;
+    background: rgba(59, 130, 246, 0.6);
+  }
+}
+
+/* Body (collapsible) */
+
+.gp-task-bubble__body {
+  padding: 0.875rem;
+  border-top: 1px solid var(--gp-border);
+}
+
+.gp-task-bubble--processing .gp-task-bubble__body,
+.gp-task-bubble--pending .gp-task-bubble__body {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.gp-task-bubble__hint {
+  margin: 0;
+  font-size: 0.78125rem;
+  color: var(--gp-ink-muted);
+}
+
+/* Done — stats + entities */
+
+.gp-task-bubble__stats {
+  display: flex;
+  gap: var(--gp-space-4);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gp-border);
+  margin-bottom: 0.75rem;
+}
+
+.gp-task-bubble__stat {
+  flex: 1;
+}
+
+.gp-task-bubble__stat-num {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--gp-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.gp-task-bubble__stat--ok .gp-task-bubble__stat-num {
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-task-bubble__stat--mute .gp-task-bubble__stat-num {
+  color: var(--gp-ink-faint);
+}
+
+.gp-task-bubble__stat-label {
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.gp-task-bubble__entities-label {
+  font-size: 0.6875rem;
+  color: var(--gp-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.gp-task-bubble__entities {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+/* Error body */
+
+.gp-task-bubble__err-msg {
+  padding: 0.625rem 0.75rem;
+  background: var(--gp-badge-err-bg);
+  border: 1px solid var(--gp-badge-err-border);
+  border-radius: 6px;
+  font-size: 0.78125rem;
+  color: var(--gp-badge-err-ink);
+  margin-bottom: 0.75rem;
+  font-family: var(--gp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  line-height: 1.5;
+}
+
+/* CTA buttons (shared by done + error) */
+
+.gp-task-bubble__cta {
+  display: flex;
+  gap: var(--gp-space-2);
+  flex-wrap: wrap;
+}
+
+.gp-task-bubble__cta form {
+  margin: 0;
+}
+
+/* Chat task/note bubble 内 .gp-btn 上下文 override — 对话语境保留 accent 突出感 */
+.gp-task-bubble__cta .gp-btn,
+.gp-note-bubble__cta .gp-btn {
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  color: var(--gp-ink-muted);
+  padding: 0.3125rem 0.625rem;
+}
+.gp-task-bubble__cta .gp-btn:hover:not(:disabled),
+.gp-note-bubble__cta .gp-btn:hover:not(:disabled) {
+  border-color: var(--gp-border-strong);
+  color: var(--gp-ink);
+  background: var(--gp-surface);
+}
+.gp-task-bubble__cta .gp-btn[data-variant="primary"],
+.gp-note-bubble__cta .gp-btn[data-variant="primary"] {
+  background: var(--gp-accent);
+  border-color: var(--gp-accent);
+  color: var(--gp-on-accent);
+}
+.gp-task-bubble__cta .gp-btn[data-variant="primary"]:hover:not(:disabled),
+.gp-note-bubble__cta .gp-btn[data-variant="primary"]:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gp-accent) 85%, black);
+  border-color: color-mix(in srgb, var(--gp-accent) 85%, black);
+  color: var(--gp-on-accent);
+  opacity: 1;
+}
+
+.gp-task-bubble__form-err,
+.gp-task-bubble__poll-err {
+  margin: 0.5rem 0.875rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--gp-badge-err-ink);
+}
+
+/* ────────────────────────────────────────────────
+   Note bubble (Chat: opinion submission cp-note card)
+   ──────────────────────────────────────────────── */
+
+.gp-note-bubble {
+  width: 600px;
+  max-width: 100%;
+  border: 1px solid var(--gp-border);
+  border-radius: 4px 14px 14px 14px;
+  background: var(--gp-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.gp-note-bubble__head {
+  padding: 0.625rem 0.875rem 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+}
+
+.gp-note-bubble__title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gp-ink-muted);
+  letter-spacing: 0.02em;
+}
+
+.gp-note-bubble__progress {
+  height: 3px;
+  margin: 0 0.875rem 0.5rem;
+  background: var(--gp-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.gp-note-bubble__progress-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--gp-accent) 75%, transparent) 50%,
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: gp-progress-shimmer 3s linear infinite;
+}
+
+.gp-note-bubble__quote {
+  margin: 0 0.875rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 4%, transparent);
+  border-radius: 2px 6px 6px 2px;
+  font-style: italic;
+  color: var(--gp-ink);
+}
+
+.gp-note-bubble__quote p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.gp-note-bubble__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--gp-space-2);
+  padding: 0 0.875rem 0.5rem;
+}
+
+.gp-note-bubble__row:last-child {
+  padding-bottom: 0.875rem;
+}
+
+.gp-note-bubble__row-label {
+  flex-shrink: 0;
+  width: 2.5rem;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+  padding-top: 0.3125rem;
+}
+
+.gp-note-bubble__row-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.gp-note-bubble__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gp-accent) 10%, transparent);
+  color: var(--gp-accent);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.gp-note-bubble__empty {
+  font-size: 0.75rem;
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+
+.gp-note-bubble__hint {
+  margin: 0 0.875rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-note-bubble__err-msg {
+  margin: 0 0.875rem 0.625rem;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--gp-badge-err-ink);
+  background: var(--gp-badge-err-bg);
+  border: 1px solid var(--gp-badge-err-border);
+  border-radius: 4px;
+}
+
+.gp-note-bubble__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gp-space-2);
+  padding: 0 0.875rem 0.875rem;
+}
+
+.gp-note-bubble__cta form {
+  margin: 0;
+}
+
+.gp-note-bubble__form-err,
+.gp-note-bubble__poll-err {
+  margin: 0.5rem 0.875rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--gp-badge-err-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-note-bubble__progress-fill {
+    animation: none;
+    background: color-mix(in srgb, var(--gp-accent) 60%, transparent);
+  }
+}
+
+/* ── Content / Action / Clarify result cards ─── */
+
+.gp-content-result__title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.gp-content-result__text {
+  white-space: pre-wrap;
+}
+
+.gp-action-result__message {
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-clarify-result__question {
+  margin-bottom: 0.375rem;
+}
+
+.gp-clarify-result__options {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.375rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.gp-clarify-result__option {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border-radius: 1rem;
+  font-size: 0.8125rem;
+  background: color-mix(in srgb, var(--gp-accent) 12%, transparent);
+  color: var(--gp-accent);
+}
+
+.gp-clarify-result__hint {
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+
+/* ── Entity Detail (chat-side rendering of entity citations) ─── */
+
+.gp-entity-description {
+  color: var(--gp-ink-muted);
+  font-style: italic;
+}
+
+.gp-point-date {
+  color: var(--gp-ink-faint);
+  font-size: 0.85em;
+}
+
+.gp-text-muted {
+  color: var(--gp-ink-faint);
+}
+
+.gp-opinion-point {
+  border-left: 3px solid var(--gp-opinion-accent);
+  padding-left: 0.5rem;
+}
+
+/* ────────────────────────────────────────────────
+   Entity chips (Chat: cited entities row)
+   ──────────────────────────────────────────────── */
+
+.gp-entity-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gp-border);
+}
+
+.gp-entity-chips__label {
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+  font-weight: 500;
+}
+
+.gp-entity-chips__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+/* ────────────────────────────────────────────────
+   Chat default (empty-state welcome + intent chips)
+   ──────────────────────────────────────────────── */
+
+/* Empty-state landing — greeting + recent conversations.
+   Sits inside .gp-chat__default which is the .gp-chat__messages slot equivalent. */
+.gp-chat__default {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2.5rem 1.25rem 1rem;
+}
+
+.gp-chat-default {
+  width: 100%;
+  max-width: 560px;
+  margin: auto 0;
+  padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.625rem;
+}
+
+.gp-chat-default__greeting {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--gp-ink);
+  line-height: 1.2;
+}
+
+.gp-chat-default__prompt {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.55;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Chat conversation header (S7+S8) — title + meta + new-conv btn
+   ───────────────────────────────────────────────────────── */
+
+.gp-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1.25rem;
+  border-bottom: 1px solid var(--gp-border);
+  background: var(--gp-bg);
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--gp-topnav-h);
+  z-index: 15;
+}
+
+/* Stack below the optional privacy strip when both are sticky (see --gp-privacy-sticky-h). */
+.gp-feed-page:has(> .gp-privacy) .gp-chat-header {
+  top: calc(var(--gp-topnav-h) + var(--gp-privacy-sticky-h));
+}
+
+@media (max-width: 560px) {
+  .gp-feed-page:has(> .gp-privacy) {
+    --gp-privacy-sticky-h: 3.5rem;
+  }
+}
+
+.gp-chat-header__title {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: var(--gp-space-2);
+  min-width: 0;
+}
+.gp-chat-header__title-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--gp-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.gp-chat-header__title-meta {
+  font-size: 0.7188rem;
+  color: var(--gp-ink-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.gp-chat-header__new {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  font-size: 0.8125rem;
+  padding: 0.3125rem 0.6875rem;
+  border-radius: 6px;
+}
+.gp-chat-header__new:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────
+   ChatDefault recent 3 继续对话区 (S7+S8)
+   ───────────────────────────────────────────────────────── */
+
+.gp-chat-default__recent {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gp-border);
+}
+.gp-chat-default__recent-label {
+  font-size: 0.85rem;
+  color: var(--gp-ink-muted);
+  margin: 0 0 8px;
+}
+.gp-chat-default__recent-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-1);
+}
+.gp-chat-default__recent-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--gp-space-3);
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.gp-chat-default__recent-item:hover:not(:disabled) {
+  background: var(--gp-hover-bg);
+}
+.gp-chat-default__recent-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.gp-chat-default__recent-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gp-chat-default__recent-time {
+  color: var(--gp-ink-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.gp-chat-default__recent-link {
+  font-size: 0.88rem;
+  color: var(--gp-accent);
+  text-decoration: none;
+}
+.gp-chat-default__recent-link:hover {
+  text-decoration: underline;
+}
+
+/* ─────────────────────────────────────────────────────────
+   Chat error banner / info banner（unarchive 失败 / 新建失败 / 切归档对话）
+   ───────────────────────────────────────────────────────── */
+
+.gp-chat__error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gp-space-3);
+  background: color-mix(in srgb, var(--gp-danger) 15%, transparent);
+  color: var(--gp-danger);
+  padding: 8px 12px;
+  margin: var(--gp-space-2);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.gp-chat__error-banner-text {
+  flex: 1;
+}
+.gp-chat__error-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 4px;
+  opacity: 0.7;
+}
+.gp-chat__error-banner-close:hover {
+  opacity: 1;
+}
+
+.gp-chat__info-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gp-space-3);
+  background: color-mix(in srgb, var(--gp-accent) 12%, transparent);
+  color: var(--gp-accent);
+  padding: 8px 12px;
+  margin: var(--gp-space-2);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.gp-chat__info-banner-text {
+  flex: 1;
+}
+.gp-chat__info-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 0 4px;
+  opacity: 0.7;
+}
+.gp-chat__info-banner-close:hover {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+ * BufferedWaitIndicator — buffered intent classifier 等待提示
+ * 显示 waitReason 文案 + 倒计时秒数 + CSS 动画进度条 + 立即执行/取消按钮。
+ * 进度条用 transform: scaleX() + animationDuration 在窗口内线性归零；
+ * 见 docs/superpowers/plans/2026-05-17-notes-p3-buffer-mechanism.md Task 11。
+ * -------------------------------------------------------------------------- */
+.gp-buffered-wait {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--gp-color-bg-subtle, var(--gp-bg-elevated, #f3f4f6));
+  border-left: 3px solid var(--gp-color-accent, var(--gp-accent, #6b7280));
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.gp-buffered-wait__reason {
+  font-size: 14px;
+  color: var(--gp-color-text-secondary, var(--gp-text-muted, #4b5563));
+}
+
+.gp-buffered-wait__countdown {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--gp-color-text-tertiary, var(--gp-text-muted, #6b7280));
+}
+
+.gp-buffered-wait__progress {
+  height: 2px;
+  background: var(--gp-color-accent, var(--gp-accent, #6b7280));
+  animation: gp-buffered-wait-countdown linear forwards;
+  transform-origin: left center;
+}
+
+@keyframes gp-buffered-wait-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.gp-buffered-wait__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-buffered-wait__release,
+.gp-buffered-wait__cancel {
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.gp-buffered-wait__release {
+  background: var(--gp-color-accent, var(--gp-accent, #2563eb));
+  color: var(--gp-on-accent, #fff);
+}
+
+.gp-buffered-wait__cancel {
+  background: transparent;
+  color: var(--gp-color-text-secondary, var(--gp-text-muted, #4b5563));
+}
+
+/* ─────────────────────────────────────────────────────────
+   Reclassify chip bar (P5 N5) — attached under a note-bubble
+   when classifier picked "note" but the user may have meant
+   query / submit / tracking. Sits as a thin inline strip; chips
+   reuse .gp-chip primitive and only need a subtle border lift
+   so the row reads as one secondary affordance.
+   ───────────────────────────────────────────────────────── */
+
+.gp-reclassify-chip-bar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  margin-top: 6px;
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  max-width: 100%;
+}
+
+.gp-reclassify-chip-bar__current {
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+
+.gp-reclassify-chip-bar__dot {
+  color: var(--gp-ink-faint);
+  user-select: none;
+}
+
+/* Chip override — slightly tighter than default .gp-chip and a hover that
+   nudges toward the accent so the user reads "click me to re-route". */
+.gp-reclassify-chip-bar__chip {
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-color: var(--gp-border-strong);
+  background: var(--gp-surface);
+}
+.gp-reclassify-chip-bar__chip:hover:not(:disabled) {
+  border-color: var(--gp-accent);
+  color: var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 6%, var(--gp-surface));
+}
+.gp-reclassify-chip-bar__chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Inline hint shown after the user reclassifies (or arrives on a session
+   whose note was archived from /library). Replaces the chip-bar in place
+   so the message bubble stays the same height. */
+.gp-message-bubble__reclassified-hint {
+  margin: 6px 0 0;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  color: var(--gp-ink-faint);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .gp-reclassify-chip-bar {
+    border-radius: var(--gp-radius-md);
+    padding: 6px 8px;
+  }
+}

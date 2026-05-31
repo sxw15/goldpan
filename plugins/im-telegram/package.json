@@ -1,0 +1,37 @@
+{
+  "name": "@goldpan/plugin-im-telegram",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist",
+    "static"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "pretest": "node ../../scripts/ensure-built.mjs @goldpan/core @goldpan/im-runtime",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "@goldpan/im-runtime": "workspace:*",
+    "grammy": "^1.30.0",
+    "sanitize-html": "^2.13.0",
+    "marked": "^14.1.0",
+    "tslog": "^4.9.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "@types/sanitize-html": "^2.13.0",
+    "vitest": "^4.0.0",
+    "typescript": "^5.8.0"
+  }
+}

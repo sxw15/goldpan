@@ -1,0 +1,846 @@
+/* Onboarding wizard — first-run setup pages under /onboarding/*.
+
+   Visual design adopts redesign tokens (--gp-*) and primitives (.gp-btn /
+   .gp-toggle / .gp-segmented / .gp-notice / .gp-shead / .gp-scard) so the
+   wizard feels continuous with the rest of the app. The wizard pages have no
+   topnav (pre-auth, see app/layout.tsx route exclusion); the .gp-onboarding
+   shell provides its own narrow centered container.
+
+   See docs/superpowers/specs/2026-04-29-onboarding-redesign-design.md */
+
+/* ── Shell ────────────────────────────────────────────────────────────── */
+
+.gp-onboarding {
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2rem;
+}
+
+/* Wide variant for pages that render a sidebar (currently only Pipeline). The
+   default 768px container starves the main column once a 240px aside is
+   subtracted; pages that opt into `--wide` get more room without affecting
+   single-column wizard pages. */
+.gp-onboarding--wide {
+  max-width: 1024px;
+}
+
+@media (min-width: 640px) {
+  .gp-onboarding {
+    padding: 2rem 1.5rem 3rem;
+  }
+}
+
+.gp-onboarding__head {
+  margin-bottom: 1.75rem;
+}
+
+.gp-onboarding__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Wizard main is a flex column with gap — let `gap` alone control rhythm
+   between cards. Cancel `.gp-scard`'s global margin-top here, otherwise it
+   stacks on top of the flex gap and produces an uneven "void" between the
+   first card and any cards that follow. */
+.gp-onboarding__main > .gp-scard {
+  margin-top: 0;
+}
+
+/* First-run step: built-in web toggle — hidden in UI but DOM + handlers remain. */
+.gp-onboarding__web-toggle-card {
+  display: none;
+}
+
+.gp-onboarding__banner {
+  margin-bottom: 1rem;
+}
+
+.gp-onboarding__actions {
+  display: flex;
+  gap: 0.75rem;
+  /* Rely on __main column gap for spacing; top rule separates footer CTAs. */
+  margin-top: 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--gp-border);
+}
+
+.gp-onboarding__actions--end {
+  justify-content: flex-end;
+}
+
+.gp-onboarding__actions--split > :first-child {
+  margin-right: auto;
+}
+
+/* ── Stepper ──────────────────────────────────────────────────────────── */
+
+.gp-stepper__mobile {
+  display: none;
+}
+
+/* flex (not grid) so item count is decoupled from a CSS-side step total —
+   add / remove a step in progress-bar.tsx and the stepper still divides
+   the row evenly. */
+.gp-stepper__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gp-stepper__item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--gp-ink-muted);
+}
+
+/* connecting line — split into two halves so adjacent items merge visually.
+   left half (::before) joins with previous item; right half (::after) joins
+   with next. First item has no left, last item has no right. */
+.gp-stepper__item::before,
+.gp-stepper__item::after {
+  content: "";
+  position: absolute;
+  top: 11px; /* center of 22px dot */
+  height: 1px;
+  background: var(--gp-border);
+}
+
+.gp-stepper__item::before {
+  left: 0;
+  right: calc(50% + 14px);
+}
+
+.gp-stepper__item::after {
+  left: calc(50% + 14px);
+  right: 0;
+}
+
+.gp-stepper__item:first-child::before {
+  display: none;
+}
+.gp-stepper__item:last-child::after {
+  display: none;
+}
+
+.gp-stepper__item[data-state="done"] {
+  color: var(--gp-ink);
+}
+
+.gp-stepper__item[data-state="current"] {
+  color: var(--gp-ink);
+  font-weight: 600;
+}
+
+/* both halves of a done item are accent;
+   the LEFT half of the current item is also accent (right stays muted because
+   the next step isn't reached yet) */
+.gp-stepper__item[data-state="done"]::before,
+.gp-stepper__item[data-state="done"]::after,
+.gp-stepper__item[data-state="current"]::before {
+  background: var(--gp-accent);
+}
+
+.gp-stepper__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--gp-border);
+  background: var(--gp-surface);
+  font-size: 0.7rem;
+  color: var(--gp-ink-muted);
+  font-weight: 500;
+}
+
+.gp-stepper__item[data-state="done"] .gp-stepper__dot {
+  background: var(--gp-accent);
+  border-color: var(--gp-accent);
+  color: #ffffff;
+}
+
+.gp-stepper__item[data-state="current"] .gp-stepper__dot {
+  border-color: var(--gp-accent);
+  color: var(--gp-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-accent) 18%, transparent);
+}
+
+.gp-stepper__label {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Done-step link wrapper: makes the entire dot+label a clickable target
+   without changing visual layout. Inherits color/weight from the parent
+   .gp-stepper__item state styles so done-state link looks identical to a
+   non-link done item. */
+.gp-stepper__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.gp-stepper__link:hover {
+  color: var(--gp-accent);
+}
+
+.gp-stepper__link:focus-visible {
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (max-width: 639px) {
+  .gp-stepper__list {
+    display: none;
+  }
+  .gp-stepper__mobile {
+    display: block;
+  }
+  .gp-stepper__mobile-label {
+    margin: 0 0 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gp-ink);
+  }
+  .gp-stepper__mobile-sep {
+    margin: 0 0.5rem;
+    color: var(--gp-ink-muted);
+  }
+  .gp-stepper__mobile-name {
+    color: var(--gp-ink-muted);
+  }
+  .gp-stepper__mobile-bar {
+    height: 4px;
+    background: var(--gp-border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .gp-stepper__mobile-fill {
+    display: block;
+    height: 100%;
+    background: var(--gp-accent);
+    transition: width 0.3s ease-out;
+  }
+}
+
+/* ── WizardField ──────────────────────────────────────────────────────── */
+
+/* Padding / border-bottom mirror settings' .gp-field so wizard fields visually
+   nest inside .gp-scard the same way as settings-page fields. Default layout
+   is stacked (label above control) — better for form-heavy input rows than
+   the 3-column grid settings uses for read-only value displays. */
+.gp-wfield {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.gp-wfield:last-child {
+  border-bottom: none;
+}
+
+.gp-wfield__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gp-ink);
+}
+
+.gp-wfield__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+}
+
+.gp-wfield__control {
+  min-width: 0;
+}
+
+/* Inline: label left, control right — for toggle / segmented rows where the
+   control IS the value. Hint, when present, drops to its own row underneath. */
+.gp-wfield--inline {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.gp-wfield--inline .gp-wfield__label {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.gp-wfield--inline .gp-wfield__hint {
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+
+.gp-wfield--inline .gp-wfield__control {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: end;
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────────── */
+
+.gp-onboarding select,
+.gp-onboarding input[type="text"],
+.gp-onboarding input[type="password"],
+.gp-onboarding input[type="number"],
+.gp-onboarding input[type="time"],
+.gp-onboarding textarea {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--gp-ink);
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: 6px;
+  transition: var(--gp-transition);
+}
+
+.gp-onboarding select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--gp-ink-muted) 50%),
+    linear-gradient(135deg, var(--gp-ink-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 9px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.gp-onboarding select:focus-visible,
+.gp-onboarding input:focus-visible,
+.gp-onboarding textarea:focus-visible {
+  outline: 2px solid var(--gp-accent);
+  outline-offset: 1px;
+  border-color: var(--gp-accent);
+}
+
+.gp-onboarding select:disabled,
+.gp-onboarding input:disabled,
+.gp-onboarding textarea:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gp-onboarding input[aria-invalid="true"] {
+  border-color: var(--gp-danger);
+}
+
+.gp-onboarding input[type="number"] {
+  max-width: 9rem;
+}
+
+.gp-onboarding input[type="time"] {
+  max-width: 9rem;
+}
+
+/* ── Pipeline page ────────────────────────────────────────────────────── */
+
+.gp-onboarding-pipeline {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .gp-onboarding-pipeline {
+    grid-template-columns: 1fr 240px;
+    align-items: start;
+  }
+}
+
+.gp-onboarding-pipeline__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.gp-onboarding-pipeline__aside {
+  position: sticky;
+  top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-md);
+  background: var(--gp-surface-raised);
+  font-size: 0.8125rem;
+}
+
+.gp-onboarding-pipeline__aside-title {
+  margin: 0 0 0.625rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--gp-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── StepCard (inside SettingsCard.body) ──────────────────────────────── */
+
+.gp-step-card {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--gp-border);
+}
+
+.gp-step-card:last-child {
+  border-bottom: none;
+}
+
+.gp-step-card[data-state="off"] {
+  opacity: 0.7;
+}
+
+.gp-step-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.gp-step-card__heading {
+  min-width: 0;
+}
+
+.gp-step-card__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gp-ink);
+}
+
+/* «N/total» prefix on the step card title — light, monospaced, sits before
+   the title so users can see the position in the section at a glance. */
+.gp-step-card__index {
+  margin-right: 0.4rem;
+  color: var(--gp-ink-muted);
+  font-weight: 500;
+  font-family: var(--gp-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.gp-step-card__desc {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+}
+
+.gp-step-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.gp-step-card__toggle-label {
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+}
+
+.gp-step-card__body {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gp-step-card__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--gp-ink-muted);
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Two-stage picker (provider + model) — mirrors the settings page
+   `.gp-llm-step-row__pickers` layout. flex-wrap so the row breaks gracefully
+   in narrow main columns instead of overflowing or visually crowding the
+   description text. Provider stays fixed-narrow (140-200px) while the model
+   select / custom input grows to fill remaining width — model ids tend to
+   be longer (e.g. claude-sonnet-4-5-20250929). */
+.gp-step-card__pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gp-space-2);
+  min-width: 0;
+}
+.gp-step-card__pickers > .gp-sselect {
+  height: 32px;
+}
+/* Provider stays compact — its label is short (provider name + optional
+   «+ 配置 provider» hint). Min 130 fits the longest unconfigured-builtin
+   label («Ollama (本地) (+ 配置 provider)») on one line; max 180 prevents
+   the select from gobbling space on wider viewports. */
+.gp-step-card__provider-select {
+  flex: 0 0 auto;
+  min-width: 130px;
+  max-width: 180px;
+}
+/* Model select / custom input grows to fill remaining width — model ids are
+   long (e.g. claude-sonnet-4-5-20250929). Min 200px ensures the two pickers
+   sit on one row in the wizard shell's narrow main column (~424px usable). */
+.gp-step-card__model-select {
+  flex: 1 1 200px;
+  min-width: 200px;
+}
+.gp-step-card__model-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-1);
+  flex: 1 1 200px;
+  min-width: 200px;
+}
+.gp-step-card__model-custom > .gp-sinput {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── ChipArea (provider chip with X) ──────────────────────────────────── */
+
+.gp-onboarding-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.gp-onboarding-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-radius: 999px;
+  color: var(--gp-ink);
+}
+
+.gp-onboarding-chip__remove {
+  background: transparent;
+  border: none;
+  color: var(--gp-ink-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  padding: 0 0.125rem;
+  line-height: 1;
+  transition: var(--gp-transition);
+}
+
+.gp-onboarding-chip__remove:hover,
+.gp-onboarding-chip__remove:focus-visible {
+  color: var(--gp-danger);
+  outline: none;
+}
+
+/* ── ConfiguredStepsOverview (right rail in Pipeline page) ────────────── */
+
+.gp-onboarding-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Two-row layout when a model is present: dot + title on row 1, model on row 2
+   (indented to line up under the title, not the dot). The 240px aside is too
+   narrow for a single-line dot+title+model — without wrap, the browser breaks
+   short Chinese titles like "分类器" mid-word. */
+.gp-onboarding-overview__item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.4;
+}
+
+.gp-onboarding-overview__item[data-state="done"] {
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-onboarding-overview__item[data-state="current"] {
+  color: var(--gp-accent);
+  font-weight: 500;
+}
+
+.gp-onboarding-overview__model {
+  flex-basis: 100%;
+  /* Indent under the title (dot ~14px + gap 6.4px ≈ 20px). */
+  margin-left: 1.25rem;
+  color: var(--gp-ink-muted);
+  font-family: var(--gp-font-mono);
+  font-size: 0.75rem;
+  /* Long model ids like "deepseek:deepseek-v4-flash" must wrap inside the
+     narrow rail. `anywhere` prefers separator chars (`:`, `-`) over mid-word
+     splits — so the id breaks at natural boundaries when it fits, and only
+     splits a token if even that doesn't. */
+  overflow-wrap: anywhere;
+}
+
+/* ── Multi-checkbox lists (digest modules, tracking providers) ────────── */
+
+.gp-onboarding-multicheck {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.gp-onboarding-multicheck > li {
+  display: block;
+}
+
+.gp-onboarding-multicheck label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--gp-ink);
+  cursor: pointer;
+}
+
+.gp-onboarding-multicheck input[type="checkbox"] {
+  accent-color: var(--gp-accent);
+}
+
+.gp-onboarding-multicheck__nested {
+  margin: 0.375rem 0 0.5rem 1.5rem;
+}
+
+/* ── Tracking rules list ─────────────────────────────────────────────── */
+
+.gp-onboarding-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.gp-onboarding-rule {
+  padding: 0.875rem;
+  background: var(--gp-surface-raised);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gp-onboarding-rule__head {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.gp-onboarding-rule__head input {
+  flex: 1;
+}
+
+/* ── Helper text & links ─────────────────────────────────────────────── */
+
+.gp-onboarding-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-onboarding-helper {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--gp-ink-muted);
+}
+
+.gp-onboarding-helper--small {
+  font-size: 0.75rem;
+}
+
+.gp-onboarding-helper--error {
+  color: var(--gp-danger);
+}
+
+.gp-onboarding-helper a,
+.gp-onboarding-link {
+  color: var(--gp-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.gp-onboarding-link:hover,
+.gp-onboarding-link:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
+/* ── Advanced disclosure (embedding "advanced" foldout) ──────────────── */
+
+/* The previous wfield's bottom border doubles as the separator above the
+   summary — no border-top needed on .gp-onboarding-advanced itself. Summary
+   padding mirrors .gp-wfield (12px 18px) so the row aligns with the model
+   dropdown above. */
+.gp-onboarding-advanced > summary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--gp-accent);
+  padding: 12px 18px;
+  list-style: none;
+  user-select: none;
+}
+
+.gp-onboarding-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.gp-onboarding-advanced > summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1rem;
+  font-weight: 600;
+}
+
+.gp-onboarding-advanced[open] > summary::before {
+  content: "−";
+}
+
+/* ── Password strength indicator ─────────────────────────────────────── */
+
+.gp-onboarding [data-strength="weak"] {
+  color: var(--gp-danger);
+}
+
+.gp-onboarding [data-strength="ok"] {
+  color: var(--gp-badge-warn-ink);
+}
+
+.gp-onboarding [data-strength="strong"] {
+  color: var(--gp-badge-ok-ink);
+}
+
+/* ── Complete page: validation error list ───────────────────────────── */
+
+.gp-onboarding-errors {
+  list-style: disc;
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--gp-ink);
+}
+
+.gp-onboarding-errors code {
+  font-family: var(--gp-font-mono);
+  color: var(--gp-ink-muted);
+}
+
+/* ── Complete page: saved status + restart panel ────────────────────── */
+
+/* "Configuration written to .env" inline status — sits between the page
+   heading and the restart panel. Green-tinted to signal success without
+   stealing weight from the primary CTA below. */
+.gp-onboarding-complete-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.5rem 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--gp-badge-ok-ink);
+}
+
+.gp-onboarding-complete-saved svg {
+  flex-shrink: 0;
+}
+
+/* RestartPanel surface + manual-restart command pill / step list have moved
+   to `primitives/restart-panel.css` (shared with the settings "about" page).
+   The complete page only owns saved-status + demo-link styling now. */
+
+/* Demo links sit at the very bottom of the page, below the panel. Smaller
+   leading + faint color so they read as secondary to the restart action. */
+.gp-onboarding-complete-demos {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+}
+
+/* ── Inline utilities (replace ad-hoc style={{ ... }} usages) ───────── */
+
+/* Inline danger-coloured text — used inside <WizardField hint> for
+   password validation messages and inside <Notice> bodies for secret
+   warnings. Span-flavoured counterpart to .gp-onboarding-helper--error
+   (which is for <p>). */
+.gp-onboarding-danger-text {
+  color: var(--gp-danger);
+}
+
+/* Onboarding-only override: the page-level `.gp-onboarding input[type=...]`
+   selectors win at (0,2,1) over the global rule, so we re-add the right
+   padding here at (0,3,2). The base `.gp-pw-wrap` styles live in
+   `primitives/password-input.css`. */
+.gp-onboarding .gp-pw-wrap input[type="password"],
+.gp-onboarding .gp-pw-wrap input[type="text"] {
+  padding-right: 36px;
+}
+
+/* "·" separator between adjacent inline links (e.g. YouTube · Bilibili
+   on the complete page). */
+.gp-onboarding-link-sep {
+  margin: 0 0.5rem;
+  color: var(--gp-ink-muted);
+}
+
+/* Trailing line under a validation error list ("Please go back to edit"). */
+.gp-onboarding-errors-back {
+  margin: 0.75rem 0 0;
+}
+
+/* Button cluster sitting in <Notice trailing> — needs its own gap because
+   .gp-notice__trailing is a single-row flex parent that doesn't space
+   multiple children. */
+.gp-onboarding-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* TzCard's right-side action cluster: dropdown + button(s) in a single
+   inline-flex row, matching the visual rhythm of <Segmented> next to it
+   in the sibling language / theme cards. */
+.gp-tz-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+}

@@ -1,0 +1,200 @@
+/* Modal primitive — TWO co-existing variants:
+
+   1. Legacy native-<dialog> + __panel (.gp-modal__panel / __btn / __actions /
+      __message / __header / __close / __content--scrollable / --large)
+      Used by: components/confirm-modal.tsx, components/digest/share-dialog.tsx
+      DOM: <dialog .gp-modal>.showModal() with __panel as visible surface.
+
+   2. Custom backdrop + div (.gp-modal-backdrop / .gp-modal / __head / __sub /
+      __body / __foot) — Phase C review fix v3 (renamed from .gp-smodal*).
+      Used by: components/ui/modal.tsx (settings groups).
+      DOM: <button .gp-modal-backdrop> + <div .gp-modal>.
+
+   The two variants both touch `.gp-modal` and `.gp-modal__title`; the visible-
+   surface rules are scoped to the relevant element type (dialog vs div) to
+   avoid `.gp-modal` collision. `.gp-modal__title` is intentionally shared —
+   both variants want the same heading typography.
+
+   Keyframes (gp-fade-in, gp-modal-in) live in utils/animations.css. */
+
+/* ─── Variant 1 (legacy <dialog>) ──────────────────────────────────────── */
+
+dialog.gp-modal {
+  border: none;
+  border-radius: var(--gp-radius);
+  padding: 0;
+  max-width: 24rem;
+  width: calc(100% - 2rem);
+  background: transparent;
+  color: var(--gp-ink);
+}
+
+dialog.gp-modal--large {
+  max-width: 48rem;
+  max-height: calc(100dvh - 4rem);
+  height: 100%;
+}
+
+dialog.gp-modal::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.gp-modal__panel {
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  border-radius: var(--gp-radius);
+  padding: 1.25rem;
+}
+
+.gp-modal__panel--large {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.gp-modal__content--scrollable {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 1.25rem;
+}
+
+.gp-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 1rem;
+}
+
+.gp-modal__close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--gp-ink-muted);
+  cursor: pointer;
+  padding: var(--gp-space-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gp-modal__close:hover {
+  color: var(--gp-ink);
+}
+
+.gp-modal__message {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: var(--gp-ink-muted);
+  line-height: 1.5;
+}
+
+.gp-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gp-space-2);
+}
+
+.gp-modal__btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--gp-radius-sm);
+  border: 1px solid var(--gp-border-strong);
+  background: transparent;
+  color: var(--gp-ink-muted);
+  cursor: pointer;
+  transition:
+    background var(--gp-transition),
+    border-color var(--gp-transition),
+    color var(--gp-transition);
+}
+
+.gp-modal__btn:hover {
+  border-color: var(--gp-ink);
+  color: var(--gp-ink);
+}
+
+.gp-modal__btn--danger {
+  border-color: var(--gp-danger);
+  background: var(--gp-danger);
+  color: var(--gp-on-accent);
+}
+
+.gp-modal__btn--danger:hover {
+  border-color: var(--gp-danger);
+  background: #c00;
+  color: var(--gp-on-accent);
+}
+
+.gp-modal__btn--primary {
+  border-color: var(--gp-ink);
+  background: var(--gp-ink);
+  color: var(--gp-bg);
+}
+
+.gp-modal__btn--primary:hover {
+  opacity: 0.85;
+}
+
+/* ─── Variant 2 (custom backdrop, new <Modal>) ────────────────────────── */
+
+.gp-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  z-index: 60;
+  border: 0;
+  cursor: pointer;
+  animation: gp-fade-in 0.15s;
+}
+
+div.gp-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 61;
+  background: var(--gp-surface);
+  border-radius: 12px;
+  width: 420px;
+  max-width: calc(100% - 40px);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: gp-modal-in 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.gp-modal__head {
+  padding: 18px 20px 6px;
+}
+
+/* Shared by both variants — heading typography is identical. */
+.gp-modal__title {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+  color: var(--gp-ink);
+}
+
+.gp-modal__sub {
+  font-size: 12.5px;
+  color: var(--gp-ink-muted);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+.gp-modal__body {
+  padding: 14px 20px 4px;
+}
+
+.gp-modal__foot {
+  padding: 14px 20px;
+  display: flex;
+  gap: var(--gp-space-2);
+  justify-content: flex-end;
+  border-top: 1px solid var(--gp-border);
+  background: var(--gp-bg);
+  margin-top: 8px;
+}

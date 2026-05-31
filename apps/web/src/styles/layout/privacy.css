@@ -1,0 +1,76 @@
+/* Privacy banner — warm tint from shared chip tokens so it reads as “notice”
+   without a flat paint block; still solid (no backdrop blur). */
+
+.gp-privacy {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1.25rem;
+  background: color-mix(in srgb, var(--gp-bg) 52%, var(--gp-chip-submit-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--gp-border) 55%, rgba(217, 119, 6, 0.42));
+  box-shadow: inset 3px 0 0 0 var(--gp-badge-warn-ink);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--gp-warn-soft-ink);
+  animation: gp-fade-rise 0.55s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--gp-topnav-h);
+  z-index: 25;
+  isolation: isolate;
+}
+
+.gp-privacy::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gp-badge-warn-ink);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .gp-privacy {
+  background: color-mix(in srgb, var(--gp-bg) 62%, var(--gp-chip-submit-bg));
+  border-color: color-mix(in srgb, var(--gp-border) 45%, rgba(251, 191, 36, 0.38));
+  color: #fbbf24;
+}
+
+.gp-privacy__text {
+  margin: 0;
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: inherit;
+}
+
+.gp-privacy__text strong {
+  color: inherit;
+  font-weight: 600;
+}
+
+.gp-privacy__dismiss {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity var(--gp-transition);
+}
+
+.gp-privacy__dismiss:hover {
+  opacity: 1;
+  background: rgba(217, 119, 6, 0.12);
+}
+
+@media (max-width: 560px) {
+  .gp-privacy {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+}

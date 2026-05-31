@@ -1,0 +1,142 @@
+{
+  "pipeline": {
+    "classifying": {
+      "no_content": "没有可用的内容",
+      "compilation_failed": "分类器提示词编译失败：{message}",
+      "failed": "分类失败：{message}"
+    },
+    "collecting": {
+      "url_missing": "URL 输入缺少 originalUrl 和 normalizedUrl",
+      "no_collector": "未找到 URL 的采集器：{url}",
+      "content_too_short": "采集内容过短，无法提取有效的知识点",
+      "content_too_long": "采集内容过长（{length} 字符，上限 {limit}），请手动精简关键部分后重新提交",
+      "input_too_long": "输入内容过长（{length} 字符，上限 {limit}），请缩减后重新提交",
+      "collection_failed": "采集失败：{message}",
+      "validation_failed": "内容验证失败：{message}"
+    },
+    "extracting": {
+      "no_content": "没有可用的内容",
+      "compilation_failed": "提取器提示词编译失败：{message}",
+      "failed": "提取失败：{message}"
+    },
+    "matching": {
+      "compilation_failed": "匹配器提示词编译失败：{message}",
+      "failed": "匹配失败：{message}"
+    },
+    "comparing": {
+      "no_matching_output": "matchingOutput 为 null —— 匹配步骤必须先执行",
+      "invalid_entity_key": "无效的 entityKey 格式：{key}",
+      "failed": "比较失败（{entityName}）：{message}"
+    },
+    "verifying": {
+      "non_target_key": "验证器返回了非目标 pointKey「{key}」，已忽略",
+      "conflict": "验证冲突：pointKey {key} 同时出现在 verifiedPointKeys 和 rejectedPointKeys 中，按拒绝处理",
+      "omission": "验证器未返回 pointKey「{key}」的判断（可能是 LLM 响应截断），默认接受",
+      "degraded": "验证轮次失败，跳过验证直接存储：{message}",
+      "degraded_generic": "发生了内部错误"
+    },
+    "storing": {
+      "invalid_entity_key": "存储中的 entityKey 格式无效：「{key}」",
+      "missing_matched_id": "{pointKey} 的 skipped 判断缺少 matchedPointId",
+      "verifier_rejected": "验证器拒绝",
+      "entity_created": "已创建新实体：{name}",
+      "aliases_discovered": "发现新别名：{aliases}",
+      "point_created_fact": "新增事实类知识点",
+      "point_created_opinion": "新增观点类知识点",
+      "source_confirmed": "来源已确认并存储",
+      "source_confirmed_empty": "来源已处理但无知识输出"
+    },
+    "relating": {
+      "compilation_failed": "关系提取 prompt 编译失败：{message}",
+      "failed": "关系提取失败：{message}"
+    },
+    "translating": {
+      "degraded": "翻译步骤失败，将使用原文：{message}",
+      "missing_translation": "翻译模型未返回 id「{id}」的结果，保留原文"
+    }
+  },
+  "validation": {
+    "alias_parse_failed": "解析实体 {id} 的别名失败，跳过该实体的别名去重",
+    "draft_name_match": "草稿「{name}」名称匹配现有实体 [entity:{entityId}]「{entityName}」，降级为引用",
+    "draft_downgrade_warning": "[草稿→实体降级警告] entity:{entityId} 有 {count} 个活跃的事实类知识点，但本轮事实类知识点未经 LLM 比较（比较阶段作为草稿运行，所有事实自动判定为新增）",
+    "draft_alias_match": "草稿「{name}」名称匹配现有实体「{entityName}」的别名，保持草稿状态（别名匹配置信度不足）",
+    "draft_dedup": "草稿去重：「{name}」已合并到「{target}」",
+    "entity_ref_dedup": "实体引用去重：「{name}」（{key}）已合并",
+    "unknown_point_key": "未知的 pointKey「{key}」已忽略",
+    "duplicate_point_key": "重复的 pointKey「{key}」已忽略（保留第一个）",
+    "invalid_matched_id": "matchedPointId {id} 不在实体的现有知识点中，降级为 judgment='new'",
+    "skipped_null_matched": "judgment='skipped' 但 matchedPointId 为 null（pointKey: {key}），降级为 judgment='new'",
+    "category_empty": "草稿实体的分类路径为空，使用分类器建议：「{fallback}」",
+    "category_depth_exceeded": "分类路径深度 {depth} 超过上限 {limit}，已截断",
+    "category_segment_long": "分类路径片段「{segment}...」超过 {limit} 字符，已截断",
+    "category_empty_after_norm": "规范化后分类路径为空，使用分类器建议：「{fallback}」",
+    "relation_invalid_ref": "关系被丢弃：entityKey 未找到（source={source}，target={target}）",
+    "relation_self_ref": "关系被丢弃：自引用（key={key}）",
+    "relation_invalid_type": "关系被丢弃：无效类型「{type}」",
+    "relation_dedup": "关系被丢弃：提升后重复（{source} → {target}，type={type}）"
+  },
+  "llm": {
+    "schema_validation": "步骤「{step}」的 LLM 结构验证失败：{message}",
+    "content_policy": "步骤「{step}」内容策略违规：{message}",
+    "rate_limit": "步骤「{step}」在 {retries} 次重试后超出速率限制：{message}",
+    "timeout": "步骤「{step}」的 LLM 调用在 {timeoutSeconds} 秒后超时：{message}",
+    "generic_failure": "步骤「{step}」的 LLM 调用失败：{message}"
+  },
+  "worker": {
+    "source_not_found": "未找到来源 {sourceId}"
+  },
+  "intent": {
+    "classification_failed": "意图分类失败：{message}"
+  },
+  "query": {
+    "empty_query": "查询内容为空",
+    "too_long": "查询内容过长（上限 {limit} 字符）",
+    "understand_failed": "查询理解失败：{message}",
+    "search_failed": "知识搜索失败：{message}",
+    "answer_failed": "答案生成失败：{message}"
+  },
+  "intent_note": {
+    "saved_assistant_text": "已记录到笔记 #{noteId}"
+  },
+  "intent_tracking": {
+    "pending_pipeline_assistant_text": "待来源分析完成后建立追踪",
+    "pending_multi_entity_assistant_text": "需要你选择追踪哪个主体"
+  },
+  "intent_classifier": {
+    "wait_indicator_im_text": "等待补充信息（{seconds}s 内继续发，或 /release 立即执行，/cancel 取消）",
+    "no_active_buffer": "当前没有等待中的消息",
+    "cancelled": "已取消",
+    "wait_reason": {
+      "incomplete_referent": "未找到指代对象",
+      "incomplete_command": "句子未完成",
+      "awaiting_url": "等待 URL",
+      "awaiting_clarification": "等待补充信息"
+    },
+    "clarify_question": {
+      "ambiguous_intent": "你这条想做什么？",
+      "unclear_target": "你想针对哪个主题？",
+      "incomplete_action": "你想对它做什么操作？"
+    },
+    "clarify_option": {
+      "create_note": "记笔记",
+      "submit_url": "提交链接",
+      "query": "查询知识库",
+      "create_tracking": "建立追踪",
+      "submit_text": "提交文本",
+      "record_thought": "记录观点"
+    }
+  },
+  "tracking": {
+    "resolved_assistant_text": "已建立追踪「{name}」",
+    "failed_no_entity_assistant_text": "未能从该来源抽出实体，追踪未建立。请直接告诉我要追踪什么。",
+    "failed_source_pipeline_assistant_text": "来源处理失败，无法基于它建立追踪。",
+    "awaiting_clarify_assistant_text": "找到多个实体，请选择追踪哪一个：",
+    "awaiting_clarify_timeout_assistant_text": "上次的实体选择超过 24 小时未确认，已自动放弃。如需追踪请重新发起。"
+  },
+  "notes": {
+    "subtype": {
+      "memo": "备忘",
+      "note": "笔记"
+    }
+  }
+}

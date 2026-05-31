@@ -1,0 +1,30 @@
+/* Section header primitive — title + tools row used across pages.
+   Phase C 抽 React 原语后会从这里 export 出去；现阶段保持选择器层。 */
+
+.gp-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gp-space-4);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.gp-section-head__title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.gp-section-head__title small {
+  font-size: 12px;
+  color: var(--gp-ink-faint, #999);
+  font-weight: 500;
+  margin-left: 8px;
+  letter-spacing: 0;
+}
+.gp-section-head__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--gp-space-2);
+  flex-wrap: wrap;
+}

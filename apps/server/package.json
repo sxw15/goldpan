@@ -1,0 +1,35 @@
+{
+  "name": "@goldpan/server",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "pretest": "node ../../scripts/ensure-built.mjs @goldpan/core @goldpan/web-sdk @goldpan/plugin-collector-browser @goldpan/plugin-collector-media @goldpan/plugin-github-collector @goldpan/plugin-github-intent @goldpan/plugin-digest @goldpan/plugin-im-feishu @goldpan/plugin-tool-search-brave @goldpan/plugin-tool-search-exa @goldpan/plugin-tool-search-google @goldpan/plugin-tool-search-searxng @goldpan/plugin-tool-search-serper @goldpan/plugin-tool-search-tavily @goldpan/plugin-tracking",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@goldpan/core": "workspace:*",
+    "@goldpan/im-runtime": "workspace:*",
+    "@goldpan/plugin-collector-media": "workspace:*",
+    "@goldpan/plugin-im-feishu": "workspace:*",
+    "@goldpan/plugin-im-telegram": "workspace:*",
+    "@goldpan/web-sdk": "workspace:*",
+    "dotenv": "^16.6.1",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^24.0.0",
+    "better-sqlite3": "^12.8.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Goldpan · Pipeline 技术 Walkthrough</title>
+
+    <style>
+      /* ─────────────────────────────────────────────────────────
+         Tokens — 走 spec-sheet / docs 视觉风格：高密度 mono、
+         金色作 highlight、deterministic / LLM / optional 三种
+         step 类别用颜色区分。
+         ─────────────────────────────────────────────────────── */
+      :root {
+        --gold: #d4a04c;
+        --gold-bright: #f0c674;
+        --gold-soft: #8c6a32;
+        --moss: #82a07c;
+        --cool: #6b8aaf;
+        --rose: #c97264;
+        --tx-mono:
+          'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', 'Consolas',
+          monospace;
+        --tx-sans:
+          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+          sans-serif;
+      }
+
+      [data-theme='dark'] {
+        --bg: #0b0d10;
+        --bg-2: #111418;
+        --surface: #161a1f;
+        --surface-2: #1c2128;
+        --surface-3: #20262e;
+        --border: #2a2f36;
+        --border-strong: #3a414c;
+        --text: #e8eaed;
+        --text-2: #b8bdc7;
+        --text-dim: #7a8290;
+      }
+
+      [data-theme='light'] {
+        --bg: #f5f3ef;
+        --bg-2: #ebe7df;
+        --surface: #ffffff;
+        --surface-2: #f8f6f1;
+        --surface-3: #f0ece2;
+        --border: #d8d2c4;
+        --border-strong: #b8b0a0;
+        --text: #1d2128;
+        --text-2: #4a5260;
+        --text-dim: #7a8290;
+        --gold: #b58234;
+        --gold-bright: #d4a04c;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--tx-sans);
+        font-size: 13px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      ::selection {
+        background: var(--gold);
+        color: var(--bg);
+      }
+
+      .mono {
+        font-family: var(--tx-mono);
+        font-feature-settings: 'zero', 'ss02';
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+
+      /* ─── Layout ───────────────────────────────────────────── */
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 18px 28px 24px;
+        gap: 16px;
+        min-height: 100vh;
+      }
+
+      header.top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 16px;
+        align-items: end;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .top__brand {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .top__crumb {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .top__crumb-mark {
+        width: 14px;
+        height: 14px;
+      }
+      .top__title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0;
+      }
+      .top__title em {
+        font-style: normal;
+        color: var(--gold);
+      }
+      .top__sub {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-2);
+        line-height: 1.6;
+      }
+      .top__sub b {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid var(--border);
+        padding: 2px;
+        border-radius: 4px;
+      }
+      .toggle button {
+        height: 24px;
+        padding: 0 10px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+        border-radius: 2px;
+      }
+      .toggle button[aria-pressed='true'] {
+        background: var(--surface-2);
+        color: var(--gold);
+      }
+
+      .top__actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      /* ─── Main grid: spec sheet (left) + pipeline diagram (right) */
+      main {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      @media (max-width: 920px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ─── LEFT: Spec sheet ────────────────────────────────── */
+      .spec {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .spec__head {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .spec__num {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .spec__num strong {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      .spec__name-row {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .spec__name {
+        font-family: var(--tx-mono);
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--gold);
+      }
+      .spec__alias {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      .spec__tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 2px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border: 1px solid currentColor;
+        color: var(--text-dim);
+      }
+      .tag .dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .tag--llm {
+        color: var(--gold);
+      }
+      .tag--det {
+        color: var(--moss);
+      }
+      .tag--opt {
+        color: var(--cool);
+      }
+      .tag--cost-low {
+        color: var(--moss);
+      }
+      .tag--cost-mid {
+        color: var(--gold);
+      }
+      .tag--cost-high {
+        color: var(--rose);
+      }
+
+      .spec__body {
+        padding: 14px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow-y: auto;
+      }
+
+      .section__h {
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        margin: 0 0 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section__h::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .section__body {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-2);
+      }
+      .section__body code {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        padding: 1px 4px;
+        background: var(--surface-3);
+        color: var(--gold);
+        border-radius: 2px;
+      }
+      .section__body strong {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .deps {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .deps__item {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-2);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .deps__arrow {
+        color: var(--gold);
+        font-weight: 600;
+      }
+      .deps__item .lbl {
+        color: var(--text-dim);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        width: 56px;
+      }
+
+      .schema {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 10px 12px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        line-height: 1.65;
+        color: var(--text-2);
+        white-space: pre-wrap;
+      }
+      .schema .k {
+        color: var(--gold);
+      }
+      .schema .v {
+        color: var(--cool);
+      }
+      .schema .c {
+        color: var(--text-dim);
+        font-style: italic;
+      }
+      .schema .arrow {
+        color: var(--gold-bright);
+        font-weight: 600;
+      }
+
+      /* ─── RIGHT: Pipeline diagram ─────────────────────────── */
+      .diagram {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .diagram::before {
+        content: 'pipeline · process()';
+        position: absolute;
+        top: 10px;
+        right: 16px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.1em;
+      }
+
+      .diagram__source {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        padding: 6px 12px;
+        margin: 0 0 4px;
+        align-self: flex-start;
+        border: 1px dashed var(--border-strong);
+        border-radius: 3px;
+      }
+
+      .nodes {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+        padding: 0 4px;
+      }
+
+      .node-wrap {
+        position: relative;
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 8px;
+        align-items: stretch;
+        margin: 0;
+      }
+
+      .node-rail {
+        position: relative;
+      }
+      .node-rail::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        background: var(--border);
+        transform: translateX(-50%);
+      }
+      .node-wrap:not(:last-child) .node-rail::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        height: 100%;
+        left: 50%;
+        width: 1px;
+        background: var(--border);
+        transform: translateX(-50%);
+      }
+
+      .node-rail-bullet {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10px;
+        height: 10px;
+        border: 1.5px solid var(--border-strong);
+        background: var(--surface);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+        transition: all 200ms ease;
+      }
+
+      .node {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 8px 14px;
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        cursor: pointer;
+        transition: all 200ms ease;
+        position: relative;
+      }
+
+      .node:hover {
+        border-color: var(--border-strong);
+      }
+
+      .node__num {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.06em;
+        min-width: 18px;
+      }
+
+      .node__name {
+        font-family: var(--tx-mono);
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .node__name b {
+        color: var(--text-dim);
+        font-weight: 400;
+        font-size: 11px;
+        margin-left: 4px;
+      }
+
+      .node__schema {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 280px;
+      }
+
+      .node__schema .arr {
+        color: var(--gold);
+        margin: 0 4px;
+      }
+
+      .node__tier {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .tier-pip {
+        display: inline-flex;
+        align-items: center;
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border: 1px solid currentColor;
+        color: var(--text-dim);
+        border-radius: 2px;
+      }
+      .tier-pip--llm {
+        color: var(--gold);
+      }
+      .tier-pip--det {
+        color: var(--moss);
+      }
+      .tier-pip--opt {
+        color: var(--cool);
+      }
+
+      /* current node */
+      .node-wrap--current .node {
+        border-color: var(--gold);
+        background: linear-gradient(
+          90deg,
+          color-mix(in oklab, var(--gold) 12%, var(--surface-2)),
+          var(--surface-2) 80%
+        );
+        box-shadow:
+          0 0 0 1px color-mix(in oklab, var(--gold) 30%, transparent),
+          0 0 18px color-mix(in oklab, var(--gold) 14%, transparent);
+      }
+      .node-wrap--current .node-rail-bullet {
+        border-color: var(--gold);
+        background: var(--gold);
+        transform: translate(-50%, -50%) scale(1.4);
+        animation: pulse-gold 1.6s ease-out infinite;
+      }
+      .node-wrap--current .node__num,
+      .node-wrap--current .node__name {
+        color: var(--gold);
+      }
+      .node-wrap--current .node__name b {
+        color: color-mix(in oklab, var(--gold) 60%, var(--text-dim));
+      }
+      .node-wrap--current .node__schema {
+        color: var(--text-2);
+      }
+
+      .node-wrap--done .node-rail-bullet {
+        border-color: var(--gold);
+        background: var(--gold);
+      }
+      .node-wrap--done .node-rail::before,
+      .node-wrap--done .node-rail::after {
+        background: var(--gold-soft);
+      }
+      .node-wrap--done .node__name,
+      .node-wrap--done .node__num {
+        color: var(--text-2);
+      }
+
+      @keyframes pulse-gold {
+        0% {
+          box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 50%, transparent);
+        }
+        100% {
+          box-shadow: 0 0 0 8px transparent;
+        }
+      }
+
+      /* terminal store row */
+      .terminal {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--moss);
+        align-self: flex-start;
+        margin: 4px 0 0 16px;
+        padding: 4px 10px;
+        border: 1px dashed var(--moss);
+        border-radius: 3px;
+        opacity: 0.7;
+      }
+
+      /* ─── Bottom stats / controls ─────────────────────────── */
+      footer.bottom {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 16px;
+        align-items: center;
+        padding: 10px 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+
+      .stats {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      .stats__item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .stats__item b {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      .ctl {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        color: var(--text-2);
+        transition: all 120ms ease;
+      }
+      .icon-btn:hover:not(:disabled) {
+        color: var(--gold);
+        border-color: var(--gold);
+      }
+      .icon-btn--primary {
+        background: var(--gold);
+        color: var(--bg);
+        border-color: var(--gold);
+        width: 36px;
+      }
+      .icon-btn--primary:hover:not(:disabled) {
+        background: var(--gold-bright);
+        color: var(--bg);
+      }
+
+      .speed {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid var(--border);
+        padding: 2px;
+        border-radius: 4px;
+        margin-left: 8px;
+      }
+      .speed button {
+        height: 24px;
+        padding: 0 8px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        border-radius: 2px;
+      }
+      .speed button[aria-pressed='true'] {
+        background: var(--surface-2);
+        color: var(--gold);
+      }
+
+      .keys {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        text-align: right;
+      }
+      .keys kbd {
+        font-family: var(--tx-mono);
+        padding: 1px 5px;
+        border: 1px solid var(--border-strong);
+        margin: 0 1px;
+      }
+
+      /* ─── Lang ─────────────────────────────────────────────── */
+      [data-lang='en'] [data-show-lang='zh'] {
+        display: none;
+      }
+      [data-lang='zh'] [data-show-lang='en'] {
+        display: none;
+      }
+
+      /* fade-in for spec body on step change */
+      .spec__body.is-changing {
+        animation: fade-up 380ms ease-out;
+      }
+      @keyframes fade-up {
+        0% {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="top">
+      <div class="top__brand">
+        <div class="top__crumb">
+          <svg class="top__crumb-mark" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2 6 Q2 12 8 12 Q14 12 14 6 L13 5 L3 5 Z" fill="none" stroke="var(--gold)" stroke-width="1.5"/>
+            <circle cx="6" cy="9" r="0.9" fill="var(--gold)"/>
+            <circle cx="9.5" cy="8.5" r="0.7" fill="var(--gold)"/>
+          </svg>
+          <span data-show-lang="zh">GOLDPAN · PIPELINE · ENGINEERING WALKTHROUGH</span>
+          <span data-show-lang="en">GOLDPAN · PIPELINE · ENGINEERING WALKTHROUGH</span>
+        </div>
+        <h1 class="top__title">
+          <span data-show-lang="zh">8 步 pipeline · <em>6 LLM call · 2 deterministic</em></span>
+          <span data-show-lang="en">8-stage pipeline · <em>6 LLM calls · 2 deterministic</em></span>
+        </h1>
+        <p class="top__sub">
+          <span data-show-lang="zh">
+            input → <code>collect</code> → <code>classify</code> → <code>extract</code> → <code>match</code> → <code>relate?</code> → <code>compare</code> → <code>verify?</code> → <code>store</code> → SQLite + FTS5 (+ <b>sqlite-vec</b>)<br/>
+            E2E ≈ <b>3-8s</b> · LLM tokens ≈ <b>5k</b>/article · per-task config snapshot · single-source-of-truth in <code>process()</code>
+          </span>
+          <span data-show-lang="en">
+            input → <code>collect</code> → <code>classify</code> → <code>extract</code> → <code>match</code> → <code>relate?</code> → <code>compare</code> → <code>verify?</code> → <code>store</code> → SQLite + FTS5 (+ <b>sqlite-vec</b>)<br/>
+            E2E ≈ <b>3-8s</b> · LLM tokens ≈ <b>5k</b>/article · per-task config snapshot · single-source-of-truth in <code>process()</code>
+          </span>
+        </p>
+      </div>
+      <div class="top__actions">
+        <div class="toggle" role="group" aria-label="Language">
+          <button data-lang-btn="zh" aria-pressed="true">中</button>
+          <button data-lang-btn="en" aria-pressed="false">EN</button>
+        </div>
+        <div class="toggle" role="group" aria-label="Theme">
+          <button data-theme-btn="dark" aria-pressed="true" data-show-lang="zh">深色</button>
+          <button data-theme-btn="dark" aria-pressed="true" data-show-lang="en">DARK</button>
+          <button data-theme-btn="light" aria-pressed="false" data-show-lang="zh">浅色</button>
+          <button data-theme-btn="light" aria-pressed="false" data-show-lang="en">LIGHT</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- LEFT: Spec sheet -->
+      <aside class="spec" aria-live="polite">
+        <div class="spec__head">
+          <div class="spec__num">
+            <span data-show-lang="zh">第 <strong id="num-zh">1</strong> 步 / 共 8 步</span>
+            <span data-show-lang="en">STAGE <strong id="num-en">1</strong> / 8</span>
+          </div>
+          <div class="spec__name-row">
+            <span class="spec__name mono" id="name"></span>
+            <span class="spec__alias mono" id="alias"></span>
+          </div>
+          <div class="spec__tags" id="tags"></div>
+        </div>
+
+        <div class="spec__body" id="body">
+          <!-- populated by JS -->
+        </div>
+      </aside>
+
+      <!-- RIGHT: Pipeline diagram -->
+      <section class="diagram" aria-label="Pipeline architecture">
+        <span class="diagram__source mono">{ url | text } · source</span>
+        <div class="nodes" id="nodes"></div>
+        <div class="terminal mono">→ commit · SQLite + FTS5 + sqlite-vec</div>
+      </section>
+    </main>
+
+    <footer class="bottom">
+      <div class="stats">
+        <span class="stats__item">
+          <span data-show-lang="zh">总长</span>
+          <span data-show-lang="en">e2e</span>
+          <b>≈ 3-8s</b>
+        </span>
+        <span class="stats__item">
+          <span data-show-lang="zh">LLM 调用</span>
+          <span data-show-lang="en">LLM calls</span>
+          <b id="llm-count">6</b>
+        </span>
+        <span class="stats__item">
+          <span data-show-lang="zh">tokens</span>
+          <span data-show-lang="en">tokens</span>
+          <b>≈ 5k</b>
+        </span>
+        <span class="stats__item">
+          <span data-show-lang="zh">DB 写入</span>
+          <span data-show-lang="en">DB writes</span>
+          <b>1 tx</b>
+        </span>
+      </div>
+
+      <div class="ctl">
+        <button class="icon-btn" id="btn-prev" aria-label="Prev">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3 L5 7 L9 11"/></svg>
+        </button>
+        <button class="icon-btn icon-btn--primary" id="btn-play" aria-pressed="true" aria-label="Play/Pause">
+          <svg width="14" height="14" viewBox="0 0 14 14" id="play-svg" fill="currentColor"><rect x="3" y="2.5" width="3" height="9"/><rect x="8" y="2.5" width="3" height="9"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-next" aria-label="Next">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3 L9 7 L5 11"/></svg>
+        </button>
+        <div class="speed" role="group" aria-label="Speed">
+          <button data-speed="0.5">0.5×</button>
+          <button data-speed="1" aria-pressed="true">1×</button>
+          <button data-speed="2">2×</button>
+        </div>
+      </div>
+
+      <div class="keys">
+        <span data-show-lang="zh"><kbd>←</kbd> <kbd>→</kbd> 切换 · <kbd>Space</kbd> 播放 · <kbd>1-8</kbd> 跳转</span>
+        <span data-show-lang="en"><kbd>←</kbd> <kbd>→</kbd> step · <kbd>Space</kbd> play · <kbd>1-8</kbd> jump</span>
+      </div>
+    </footer>
+
+    <script>
+      // ─────────────────────────────────────────────────────────
+      // 8 steps · engineering spec
+      // ─────────────────────────────────────────────────────────
+      const STEPS = [
+        {
+          name: 'collecting',
+          alias: 'collect',
+          tags: [
+            { kind: 'det', label: 'deterministic' },
+            { kind: 'cost-low', label: 'cost: free' },
+            { kind: 'plain', label: 'plugin-resolved' },
+          ],
+          nodeSchema: '{ url|text } → { content, title, metadata }',
+          taskZh:
+            '把异构 source（URL / text / GitHub repo / RSS …）正规化成统一的 <code>content + metadata</code>。具体抓取策略下沉到 collector 插件，pipeline 不感知 fetch 协议。',
+          taskEn:
+            'Normalize heterogeneous sources (URL / text / GitHub repo / RSS …) into a unified <code>content + metadata</code>. Fetching is delegated to collector plugins — the pipeline core does not see HTTP details.',
+          designZh:
+            '<strong>插件按 URL pattern 匹配</strong>。新 source 类型只增加一个 collector，不改 core；text input 走快路径直接跳过 fetch。',
+          designEn:
+            '<strong>Collector plugins match by URL pattern</strong>. Adding a new source type means writing one collector — no core changes. Text inputs take the fast path and skip the fetch.',
+          tradeoffZh:
+            '插件粒度决定能力上限。playwright collector 默认开启可处理 SPA，但带来 Chromium 体积开销 — 自部署用户可关闭。',
+          tradeoffEn:
+            "Plugin granularity is the ceiling. The default playwright collector handles SPAs but ships Chromium — self-hosters can disable it.",
+          schemaPretty:
+            '<span class="c">// in</span>\n{ <span class="k">url</span>?: <span class="v">string</span>, <span class="k">text</span>?: <span class="v">string</span> }\n<span class="arrow">↓</span>\n<span class="c">// out</span>\n{\n  <span class="k">content</span>: <span class="v">string</span>,\n  <span class="k">title</span>?: <span class="v">string</span>,\n  <span class="k">metadata</span>: <span class="v">JsonObject</span>\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '— (entry point)' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ all subsequent stages (gate)' },
+          ],
+        },
+        {
+          name: 'classifying',
+          alias: 'classify',
+          tags: [
+            { kind: 'llm', label: 'LLM · structured' },
+            { kind: 'cost-low', label: 'tier: small' },
+            { kind: 'plain', label: '1 call' },
+          ],
+          nodeSchema: 'content → { categoryPath, keywords[1..5] }',
+          taskZh:
+            '产出 <code>categoryPath</code>（树形分类路径）和 1-5 个 <code>keywords</code>。第一道 LLM gate，给后续 step 提供 domain hint。',
+          taskEn:
+            'Emit a tree-shaped <code>categoryPath</code> and 1-5 <code>keywords</code>. The first LLM gate, providing domain hints to downstream stages.',
+          designZh:
+            '<strong>分类先于抽取</strong>。category 给 extractor 当上下文，能显著提高领域用语的准确率（医疗、法律等术语）。',
+          designEn:
+            '<strong>Classify before extract</strong>. Category becomes context for the extractor and noticeably lifts accuracy on domain-specific vocabulary (medical, legal, …).',
+          tradeoffZh:
+            '轻量任务，small tier 模型即可（GPT-4o-mini / Haiku）。<code>maxItems: 5</code> 避免长尾关键词膨胀索引。',
+          tradeoffEn:
+            "Light task — small-tier models work (GPT-4o-mini / Haiku). <code>maxItems: 5</code> caps keyword sprawl.",
+          schemaPretty:
+            '<span class="c">// Zod-validated</span>\n{\n  <span class="k">categoryPath</span>: <span class="v">string</span>,\n  <span class="k">keywords</span>: <span class="v">string[]</span>  <span class="c">// 1..5</span>\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← collect (content)' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ extract (domain hint)' },
+          ],
+        },
+        {
+          name: 'extracting',
+          alias: 'extract',
+          tags: [
+            { kind: 'llm', label: 'LLM · structured' },
+            { kind: 'cost-mid', label: 'tier: mid' },
+            { kind: 'plain', label: '1 call/article' },
+          ],
+          nodeSchema: 'content + category → points[3..10] { content, type, tags? }',
+          taskZh:
+            '把整篇文章压缩为 3-10 个 atomic <code>points</code>（fact / opinion）。entity 提示作为 hint 留给下游 matcher。',
+          taskEn:
+            'Compress the article into 3-10 atomic <code>points</code> (fact / opinion). Entity hints are passed downstream to the matcher.',
+          designZh:
+            '<strong>整篇 single-pass</strong>，不分段并行 — context 一致性优于吞吐。<code>fact</code> vs <code>opinion</code> 区分让前端可分别展示（事实卡片 vs 笔记气泡）。',
+          designEn:
+            '<strong>Single-pass over the full article</strong>, not parallel chunks — context coherence beats throughput. The <code>fact</code> vs <code>opinion</code> split lets the UI render them differently (fact cards vs note bubbles).',
+          tradeoffZh:
+            'schema-strict 输出要求 mid-tier+ 模型；single-pass 限制了输入长度（长文需先分块预处理，目前未做）。',
+          tradeoffEn:
+            "Schema-strict output requires mid-tier+ models. Single-pass also bounds input length (long articles would need chunking — currently not implemented).",
+          schemaPretty:
+            '{\n  <span class="k">points</span>: [{\n    <span class="k">content</span>: <span class="v">string</span>,\n    <span class="k">type</span>: <span class="v">"fact" | "opinion"</span>,\n    <span class="k">tags</span>?: <span class="v">string[]</span>  <span class="c">// ≤8</span>\n  }]  <span class="c">// ≤50</span>\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← classify' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ match · verify · compare' },
+          ],
+        },
+        {
+          name: 'matching',
+          alias: 'match',
+          tags: [
+            { kind: 'llm', label: 'LLM' },
+            { kind: 'cost-mid', label: 'tier: mid' },
+            { kind: 'plain', label: 'prefiltered candidates' },
+          ],
+          nodeSchema: 'points[] + DB candidates → entities[] { resolve | draft }',
+          taskZh:
+            '决定每个 <code>point</code> 挂到哪个 entity，处理别名 / 新建。输出包含 <code>resolvedCategoryPath</code>、可发现的别名、可选 keywords / description。',
+          taskEn:
+            'Decide which entity each <code>point</code> attaches to — alias resolution or new draft. Output includes <code>resolvedCategoryPath</code>, discovered aliases, optional keywords / description.',
+          designZh:
+            '<strong>候选实体由 prefilter 预筛</strong>（FTS5 + 可选 vec），LLM 永远看不到全表。错配代价高 → 与 extractor 同档保持一致性。',
+          designEn:
+            '<strong>Candidates are pre-filtered</strong> (FTS5 + optional vec) — the LLM never sees the full table. Mismatches are expensive, so this stage uses the same tier as the extractor.',
+          tradeoffZh:
+            'prefilter 召回不全会导致重复实体；调高召回又拉高 prompt 长度。当前默认 top-K，可在 settings 调。',
+          tradeoffEn:
+            "Low-recall prefilter creates duplicate entities; high-recall blows up prompt length. Default is top-K, tunable in settings.",
+          schemaPretty:
+            '{\n  <span class="k">entities</span>: [{\n    <span class="k">entityKey</span>: <span class="v">string</span>  <span class="c">// "entity:42" | "draft:..."</span>,\n    <span class="k">entityName</span>?: <span class="v">string</span>,\n    <span class="k">resolvedCategoryPath</span>: <span class="v">string</span>,\n    <span class="k">knowledgePointKeys</span>: <span class="v">string[]</span>,\n    <span class="k">discoveredAliases</span>?: <span class="v">string[]</span>\n  }]\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← extract · prefilter (FTS5 + vec)' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ relate · compare' },
+          ],
+        },
+        {
+          name: 'relating',
+          alias: 'relate',
+          optional: true,
+          tags: [
+            { kind: 'llm', label: 'LLM' },
+            { kind: 'cost-mid', label: 'tier: mid' },
+            { kind: 'opt', label: 'OPTIONAL' },
+          ],
+          nodeSchema: 'entities[] + facts → relations[] { type ∈ 6 categories }',
+          taskZh:
+            '识别 entity 之间的关系，分 6 类：<code>organizational</code> / <code>competitive</code> / <code>collaborative</code> / <code>technical</code> / <code>causal</code> / <code>general</code>。',
+          taskEn:
+            'Detect inter-entity relations across 6 categories: <code>organizational</code> / <code>competitive</code> / <code>collaborative</code> / <code>technical</code> / <code>causal</code> / <code>general</code>.',
+          designZh:
+            '<strong>独立成步</strong>而非塞进 matcher：关系是稀疏信号，分开避免污染主流程的 schema；可单独关闭以省钱。',
+          designEn:
+            '<strong>Kept as a separate stage</strong> rather than folded into the matcher: relations are a sparse signal, and isolating them keeps the matcher schema clean. Easy to disable to cut cost.',
+          tradeoffZh:
+            '+1 LLM call/article。关系密度低（短资讯类）则不划算 — 自部署用户可关。',
+          tradeoffEn:
+            "+1 LLM call per article. For short news content with low relation density, the cost rarely pays off — easy to disable.",
+          schemaPretty:
+            '{\n  <span class="k">relations</span>: [{\n    <span class="k">sourceEntityKey</span>: <span class="v">string</span>,\n    <span class="k">targetEntityKey</span>: <span class="v">string</span>,\n    <span class="k">relationType</span>: <span class="v">enum (6)</span>,\n    <span class="k">description</span>: <span class="v">string</span>\n  }]  <span class="c">// ≤30</span>\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← match' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ store (entity_relations)' },
+          ],
+        },
+        {
+          name: 'comparing',
+          alias: 'compare',
+          tags: [
+            { kind: 'llm', label: 'LLM' },
+            { kind: 'cost-high', label: 'tier: strong' },
+            { kind: 'plain', label: 'per-entity batched' },
+          ],
+          nodeSchema: 'new facts vs DB facts → pointJudgments { new | skipped }',
+          taskZh:
+            '语义层去重：把每个 entity 的新 fact 和 DB 中已有 fact 逐条对比，标 <code>new</code> 或 <code>skipped</code> + <code>matchedPointId</code>。',
+          taskEn:
+            'Semantic dedup: compare each entity\'s new facts against existing facts in the DB, tagging each <code>new</code> or <code>skipped</code> + <code>matchedPointId</code>.',
+          designZh:
+            '<strong>按 entity 拆 LLM call</strong>，不让单 prompt 处理跨实体（提示太长 + 注意力分散）。FTS5 关键词匹配不能替代 — 需要"GPT-5 价格便宜"≈"GPT-5 售价低"这种语义判断。',
+          designEn:
+            '<strong>Per-entity LLM call</strong> — never one prompt across multiple entities (prompts get long and attention drifts). FTS5 keyword matching can\'t replace this; semantic equivalence ("GPT-5 is cheap" ≈ "GPT-5 is low-priced") is the whole point.',
+          tradeoffZh:
+            '通常是整条 pipeline 最贵的一步 — 强模型 × N entities。文章 entity 多时 latency 上升明显。',
+          tradeoffEn:
+            "Usually the most expensive stage — strong model × N entities. Articles with many entities push latency noticeably.",
+          schemaPretty:
+            '<span class="c">// per-entity, summed</span>\n{\n  <span class="k">summary</span>?: <span class="v">string</span>,\n  <span class="k">pointJudgments</span>: [{\n    <span class="k">pointKey</span>: <span class="v">string</span>,\n    <span class="k">judgment</span>: <span class="v">"new" | "skipped"</span>,\n    <span class="k">matchedPointId</span>: <span class="v">number | null</span>,\n    <span class="k">matchedContent</span>: <span class="v">string | null</span>\n  }]\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← match · DB facts (per entity)' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ store (skip dups)' },
+          ],
+        },
+        {
+          name: 'verifying',
+          alias: 'verify',
+          optional: true,
+          tags: [
+            { kind: 'llm', label: 'LLM' },
+            { kind: 'cost-mid', label: 'tier: mid' },
+            { kind: 'opt', label: 'OPTIONAL' },
+          ],
+          nodeSchema: 'points[] + source → { verifiedKeys, rejectedKeys + reason }',
+          taskZh:
+            'Hallucination guard — 校验 extractor 抽出的 fact 是否真在原文里。输出 <code>verifiedPointKeys</code> 与 <code>rejectedPointKeys[].reason</code>。',
+          taskEn:
+            'Hallucination guard — checks whether each extractor-emitted fact actually appears in the source. Outputs <code>verifiedPointKeys</code> and <code>rejectedPointKeys[].reason</code>.',
+          designZh:
+            '<strong>分离 extract / verify</strong>：与其让 extractor "边抽边自查"（降低主任务质量），不如二次校验。reason 字段进 audit log，方便回溯。',
+          designEn:
+            '<strong>Separate extract / verify</strong>: rather than asking the extractor to self-check (which dilutes the main task), use a second pass. The <code>reason</code> field lands in the audit log for inspection.',
+          tradeoffZh:
+            '~2× LLM call/article — 精度优先时开。生产数据中 reject 率多在 5-15%。',
+          tradeoffEn:
+            "~2× LLM calls per article — turn on when precision matters. Production reject rate is typically 5-15%.",
+          schemaPretty:
+            '{\n  <span class="k">verifiedPointKeys</span>: <span class="v">string[]</span>,\n  <span class="k">rejectedPointKeys</span>: [{\n    <span class="k">pointKey</span>: <span class="v">string</span>,\n    <span class="k">reason</span>: <span class="v">string</span>  <span class="c">// ≤500 chars</span>\n  }]\n}',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← extract · source content' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ store (drop rejected)' },
+          ],
+        },
+        {
+          name: 'storing',
+          alias: 'store',
+          tags: [
+            { kind: 'det', label: 'deterministic' },
+            { kind: 'cost-low', label: 'cost: free' },
+            { kind: 'plain', label: '1 transaction' },
+          ],
+          nodeSchema: 'validated graph → SQLite + FTS5 (+ sqlite-vec)',
+          taskZh:
+            '单事务写入 entities + knowledge_points + entity_relations + audit log；FTS5 触发器同步更新；启用 embedding 时同步写 vec0 表（dual connection）。',
+          taskEn:
+            'Single transaction writes entities + knowledge_points + entity_relations + audit log; FTS5 triggers update the index; with embedding enabled, vec0 tables are written via a dual connection.',
+          designZh:
+            '<strong>单事务保证 referential integrity</strong>：宁可整篇 fail 重跑也不要部分写入。<code>sqlite-vec</code> 走第二条 raw connection（drizzle 不识别 vec0 虚表）。',
+          designEn:
+            '<strong>One transaction guards referential integrity</strong> — fail the whole article and retry rather than partial writes. <code>sqlite-vec</code> uses a second raw connection because drizzle does not recognize vec0 virtual tables.',
+          tradeoffZh:
+            '大文章 entity 多时事务时间长，但 single-write 比错误回滚 + 增量重写简单 — 当前 SQLite 单写者前提下不是瓶颈。',
+          tradeoffEn:
+            "Long transactions on large articles, but a single write beats partial rollback + incremental retry — not a bottleneck under SQLite's single-writer model.",
+          schemaPretty:
+            '<span class="c">// atomic</span>\nINSERT entities          <span class="c">// new</span>\nUPDATE entities          <span class="c">// existing</span>\nINSERT knowledge_points\nINSERT entity_relations\nINSERT task_logs (audit)\n— FTS5 trigger sync —\nINSERT vec0 (if embedding on)\nCOMMIT',
+          deps: [
+            { lblZh: '上游', lblEn: 'upstream', text: '← match · relate · compare · verify' },
+            { lblZh: '下游', lblEn: 'downstream', text: '→ /input · /query (read path)' },
+          ],
+        },
+      ];
+
+      // ─────────────────────────────────────────────────────────
+      // App
+      // ─────────────────────────────────────────────────────────
+      const $ = (id) => document.getElementById(id);
+
+      function el(tag, attrs = {}, html) {
+        const e = document.createElement(tag);
+        for (const k of Object.keys(attrs)) {
+          if (k === 'class') e.className = attrs[k];
+          else e.setAttribute(k, attrs[k]);
+        }
+        if (html != null) e.innerHTML = html;
+        return e;
+      }
+
+      const state = {
+        idx: 0,
+        playing: true,
+        speed: 1,
+        timer: null,
+        lang: 'zh',
+        theme: 'dark',
+      };
+
+      function buildNodes() {
+        const root = $('nodes');
+        root.innerHTML = '';
+        STEPS.forEach((s, i) => {
+          const wrap = document.createElement('div');
+          wrap.className = 'node-wrap';
+          wrap.dataset.idx = String(i);
+
+          const rail = document.createElement('div');
+          rail.className = 'node-rail';
+          const bullet = document.createElement('div');
+          bullet.className = 'node-rail-bullet';
+          rail.appendChild(bullet);
+
+          const node = document.createElement('div');
+          node.className = 'node';
+          node.dataset.idx = String(i);
+          node.innerHTML = `
+            <span class="node__num">0${i + 1}</span>
+            <span class="node__name">${s.alias}<b>· ${s.name}</b></span>
+            <span class="node__schema">${escapeHtml(s.nodeSchema).replace(/→/g, '<span class="arr">→</span>')}</span>
+            <span class="node__tier">
+              ${s.tags
+                .filter((t) => t.kind === 'llm' || t.kind === 'det')
+                .map((t) => `<span class="tier-pip tier-pip--${t.kind === 'llm' ? 'llm' : 'det'}">${t.kind}</span>`)
+                .join('')}
+              ${s.optional ? '<span class="tier-pip tier-pip--opt">opt</span>' : ''}
+            </span>
+          `;
+          node.addEventListener('click', () => {
+            pause();
+            jump(i);
+          });
+
+          wrap.appendChild(rail);
+          wrap.appendChild(node);
+          root.appendChild(wrap);
+        });
+      }
+
+      function escapeHtml(s) {
+        return s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function paint() {
+        const s = STEPS[state.idx];
+
+        $('num-zh').textContent = String(state.idx + 1);
+        $('num-en').textContent = String(state.idx + 1);
+        $('name').textContent = s.name;
+        $('alias').textContent = `· ${s.alias}`;
+
+        // tags
+        const tagsEl = $('tags');
+        tagsEl.innerHTML = '';
+        for (const t of s.tags) {
+          const klass =
+            t.kind === 'llm'
+              ? 'tag--llm'
+              : t.kind === 'det'
+                ? 'tag--det'
+                : t.kind === 'opt'
+                  ? 'tag--opt'
+                  : t.kind.startsWith('cost-')
+                    ? `tag--${t.kind}`
+                    : '';
+          const tagEl = el('span', { class: `tag ${klass}` });
+          if (klass) {
+            tagEl.appendChild(el('span', { class: 'dot' }));
+          }
+          tagEl.appendChild(document.createTextNode(t.label));
+          tagsEl.appendChild(tagEl);
+        }
+
+        // body sections
+        const body = $('body');
+        body.classList.remove('is-changing');
+        void body.offsetWidth;
+        body.innerHTML = `
+          <section>
+            <h3 class="section__h">
+              <span data-show-lang="zh">任务</span>
+              <span data-show-lang="en">Task</span>
+            </h3>
+            <div class="section__body">
+              <span data-show-lang="zh">${s.taskZh}</span>
+              <span data-show-lang="en">${s.taskEn}</span>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="section__h">
+              <span data-show-lang="zh">设计</span>
+              <span data-show-lang="en">Design</span>
+            </h3>
+            <div class="section__body">
+              <span data-show-lang="zh">${s.designZh}</span>
+              <span data-show-lang="en">${s.designEn}</span>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="section__h">
+              <span data-show-lang="zh">取舍</span>
+              <span data-show-lang="en">Trade-off</span>
+            </h3>
+            <div class="section__body">
+              <span data-show-lang="zh">${s.tradeoffZh}</span>
+              <span data-show-lang="en">${s.tradeoffEn}</span>
+            </div>
+          </section>
+
+          <section>
+            <h3 class="section__h">
+              <span data-show-lang="zh">Schema</span>
+              <span data-show-lang="en">Schema</span>
+            </h3>
+            <pre class="schema">${s.schemaPretty}</pre>
+          </section>
+
+          <section>
+            <h3 class="section__h">
+              <span data-show-lang="zh">依赖</span>
+              <span data-show-lang="en">Deps</span>
+            </h3>
+            <div class="deps">
+              ${s.deps
+                .map(
+                  (d) => `
+                <div class="deps__item">
+                  <span class="lbl">
+                    <span data-show-lang="zh">${d.lblZh}</span>
+                    <span data-show-lang="en">${d.lblEn}</span>
+                  </span>
+                  <span>${d.text}</span>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          </section>
+        `;
+        body.classList.add('is-changing');
+        applyLang();
+
+        // node states
+        document.querySelectorAll('.node-wrap').forEach((w, i) => {
+          w.classList.toggle('node-wrap--current', i === state.idx);
+          w.classList.toggle('node-wrap--done', i < state.idx);
+        });
+
+        // scroll current node into view inside diagram if needed
+        const cur = document.querySelector('.node-wrap--current');
+        if (cur && cur.scrollIntoView) {
+          cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+
+      function jump(i) {
+        if (i < 0) i = 0;
+        if (i >= STEPS.length) i = STEPS.length - 1;
+        state.idx = i;
+        paint();
+      }
+
+      function next() {
+        if (state.idx >= STEPS.length - 1) {
+          state.idx = -1;
+        }
+        jump(state.idx + 1);
+      }
+
+      function prev() {
+        jump(state.idx - 1);
+      }
+
+      function play() {
+        state.playing = true;
+        updatePlayBtn();
+        const tick = () => {
+          if (!state.playing) return;
+          next();
+          state.timer = setTimeout(tick, 6500 / state.speed);
+        };
+        state.timer = setTimeout(tick, 6500 / state.speed);
+      }
+
+      function pause() {
+        state.playing = false;
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+        updatePlayBtn();
+      }
+
+      function updatePlayBtn() {
+        const btn = $('btn-play');
+        btn.setAttribute('aria-pressed', state.playing ? 'true' : 'false');
+        $('play-svg').innerHTML = state.playing
+          ? '<rect x="3" y="2.5" width="3" height="9"/><rect x="8" y="2.5" width="3" height="9"/>'
+          : '<path d="M3.5 2 L11 7 L3.5 12 Z"/>';
+      }
+
+      function applyLang() {
+        document.documentElement.dataset.lang = state.lang;
+        document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : 'en';
+        document
+          .querySelectorAll('[data-lang-btn]')
+          .forEach((b) =>
+            b.setAttribute(
+              'aria-pressed',
+              b.dataset.langBtn === state.lang ? 'true' : 'false'
+            )
+          );
+      }
+
+      function setLang(l) {
+        state.lang = l;
+        applyLang();
+      }
+
+      function setTheme(t) {
+        state.theme = t;
+        document.documentElement.dataset.theme = t;
+        document
+          .querySelectorAll('[data-theme-btn]')
+          .forEach((b) =>
+            b.setAttribute('aria-pressed', b.dataset.themeBtn === t ? 'true' : 'false')
+          );
+      }
+
+      // wire
+      $('btn-prev').addEventListener('click', () => {
+        pause();
+        prev();
+      });
+      $('btn-next').addEventListener('click', () => {
+        pause();
+        next();
+      });
+      $('btn-play').addEventListener('click', () => {
+        if (state.playing) pause();
+        else play();
+      });
+      document.querySelectorAll('[data-speed]').forEach((b) => {
+        b.addEventListener('click', () => {
+          state.speed = parseFloat(b.dataset.speed);
+          document
+            .querySelectorAll('[data-speed]')
+            .forEach((x) =>
+              x.setAttribute('aria-pressed', x === b ? 'true' : 'false')
+            );
+          if (state.playing) {
+            pause();
+            play();
+          }
+        });
+      });
+      document.querySelectorAll('[data-lang-btn]').forEach((b) =>
+        b.addEventListener('click', () => setLang(b.dataset.langBtn))
+      );
+      document.querySelectorAll('[data-theme-btn]').forEach((b) =>
+        b.addEventListener('click', () => setTheme(b.dataset.themeBtn))
+      );
+
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'ArrowRight') {
+          pause();
+          next();
+          e.preventDefault();
+        } else if (e.key === 'ArrowLeft') {
+          pause();
+          prev();
+          e.preventDefault();
+        } else if (e.key === ' ') {
+          if (state.playing) pause();
+          else play();
+          e.preventDefault();
+        } else if (/^[1-8]$/.test(e.key)) {
+          pause();
+          jump(parseInt(e.key, 10) - 1);
+          e.preventDefault();
+        }
+      });
+
+      buildNodes();
+      paint();
+      play();
+    </script>
+  </body>
+</html>

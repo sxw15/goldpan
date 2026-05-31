@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+.git
+.gitignore
+*.md
+!packages/core/src/prompts/**/*.md
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-wal
+*.db-shm

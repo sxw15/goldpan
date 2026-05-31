@@ -1,0 +1,2314 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark" data-lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Goldpan · Pipeline 知识淬炼流水线</title>
+    <meta
+      name="description"
+      content="可视化展示 Goldpan 把一段文本淬炼成知识图谱的 8 步 pipeline 全过程。"
+    />
+
+    <style>
+      /* ─────────────────────────────────────────────────────────
+         Design tokens
+         ─────────────────────────────────────────────────────── */
+      :root {
+        --gold: #d4a04c;
+        --gold-bright: #f0c674;
+        --gold-dim: #8c6a32;
+        --cool: #6b8aaf;
+        --rose: #c97264;
+        --moss: #82a07c;
+
+        --tx-mono:
+          'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', 'Consolas',
+          monospace;
+        --tx-sans:
+          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+          sans-serif;
+      }
+
+      [data-theme='dark'] {
+        --bg: #0b0d10;
+        --bg-2: #111418;
+        --surface: #161a1f;
+        --surface-2: #1c2128;
+        --border: #2a2f36;
+        --border-strong: #3a414c;
+        --text: #e8eaed;
+        --text-2: #b8bdc7;
+        --text-dim: #7a8290;
+        --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      }
+
+      [data-theme='light'] {
+        --bg: #f5f3ef;
+        --bg-2: #ebe7df;
+        --surface: #ffffff;
+        --surface-2: #f8f6f1;
+        --border: #d8d2c4;
+        --border-strong: #b8b0a0;
+        --text: #1d2128;
+        --text-2: #4a5260;
+        --text-dim: #7a8290;
+        --shadow: 0 1px 0 rgba(0, 0, 0, 0.02) inset;
+        --gold: #b58234;
+        --gold-bright: #d4a04c;
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Reset + base
+         ─────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--tx-sans);
+        font-size: 14px;
+        line-height: 1.55;
+        font-feature-settings: 'cv11', 'ss01', 'ss03';
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        min-height: 100vh;
+      }
+
+      ::selection {
+        background: var(--gold);
+        color: var(--bg);
+      }
+
+      button {
+        font: inherit;
+        color: inherit;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+
+      .mono {
+        font-family: var(--tx-mono);
+        font-feature-settings: 'zero', 'ss02';
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Layout
+         ─────────────────────────────────────────────────────── */
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr auto auto auto;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px 28px 20px;
+        gap: 14px;
+      }
+
+      header.top {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: end;
+        gap: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .top__brand {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .top__crumb {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+
+      .top__crumb-mark {
+        width: 14px;
+        height: 14px;
+        position: relative;
+      }
+      .top__crumb-mark svg {
+        width: 100%;
+        height: 100%;
+      }
+      .top__crumb-mark .pan {
+        stroke: var(--gold);
+        fill: none;
+        stroke-width: 1.5;
+      }
+      .top__crumb-mark .nugget {
+        fill: var(--gold);
+      }
+
+      .top__title {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .top__title em {
+        font-style: normal;
+        color: var(--gold);
+      }
+
+      .top__sub {
+        font-size: 14px;
+        color: var(--text-2);
+        max-width: 64ch;
+      }
+
+      .top__actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-2);
+        font-size: 12px;
+        font-family: var(--tx-mono);
+        letter-spacing: 0.04em;
+        border-radius: 999px;
+        transition: all 120ms ease;
+      }
+      .pill:hover {
+        border-color: var(--border-strong);
+        color: var(--text);
+      }
+      .pill[aria-pressed='true'] {
+        background: var(--gold);
+        color: var(--bg);
+        border-color: var(--gold);
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Stage (main two-pane viz)
+         ─────────────────────────────────────────────────────── */
+      main.stage {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      @media (max-width: 880px) {
+        main.stage {
+          grid-template-columns: 1fr;
+        }
+        body {
+          padding: 16px;
+        }
+      }
+
+      .info {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .info::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            circle at 100% 0%,
+            color-mix(in oklab, var(--gold) 12%, transparent) 0%,
+            transparent 40%
+          );
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
+      .info__step-num {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .info__step-num strong {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      .info__progress {
+        height: 2px;
+        background: var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .info__progress-fill {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          var(--gold-dim),
+          var(--gold-bright)
+        );
+        transform-origin: left center;
+        transform: scaleX(0);
+        transition: transform 600ms cubic-bezier(0.6, 0, 0.4, 1);
+      }
+
+      .info__head {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .info__kind {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .info__kind .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--cool);
+      }
+      .info__kind[data-kind='llm'] .dot {
+        background: var(--gold);
+      }
+      .info__kind[data-kind='det'] .dot {
+        background: var(--moss);
+      }
+      .info__kind[data-kind='llm'] {
+        color: var(--gold);
+      }
+      .info__kind[data-kind='det'] {
+        color: var(--moss);
+      }
+
+      .info__name-en {
+        font-family: var(--tx-mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        color: var(--text-dim);
+        text-transform: uppercase;
+      }
+
+      .info__name {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.15;
+        margin: 0;
+      }
+
+      .info__optional {
+        display: inline-flex;
+        align-items: center;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border: 1px solid var(--border-strong);
+        color: var(--text-2);
+        margin-left: 8px;
+        vertical-align: 4px;
+      }
+      .info__optional[hidden] {
+        display: none;
+      }
+
+      .info__desc {
+        color: var(--text-2);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .info__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+      .info__meta-row {
+        display: grid;
+        grid-template-columns: 88px 1fr;
+        gap: 12px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .info__meta-key {
+        color: var(--text-dim);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .info__meta-val {
+        color: var(--text-2);
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Viz panel (input → llm → output)
+         ─────────────────────────────────────────────────────── */
+      .viz {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 16px 20px;
+        display: grid;
+        grid-template-rows: auto auto auto auto auto auto;
+        gap: 6px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .viz__label {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .viz__label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .panel {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        padding: 10px 14px;
+        font-family: var(--tx-mono);
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--text-2);
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      .panel--input {
+        max-height: 110px;
+        overflow-y: auto;
+      }
+
+      .panel--llm {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in oklab, var(--gold) 5%, var(--bg-2)),
+            var(--bg-2) 60%
+          );
+        border-color: color-mix(in oklab, var(--gold) 30%, var(--border));
+      }
+
+      .panel--det {
+        background:
+          linear-gradient(
+            180deg,
+            color-mix(in oklab, var(--moss) 5%, var(--bg-2)),
+            var(--bg-2) 60%
+          );
+        border-color: color-mix(in oklab, var(--moss) 30%, var(--border));
+      }
+
+      .panel--output {
+        max-height: 165px;
+        overflow-y: auto;
+      }
+
+      /* arrow / flow markers between panels */
+      .flow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 16px;
+        position: relative;
+      }
+      .flow__line {
+        width: 1px;
+        height: 100%;
+        background: linear-gradient(
+          180deg,
+          transparent,
+          var(--border-strong),
+          transparent
+        );
+      }
+      .flow__dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 50%;
+        animation: flowdot 1.2s linear infinite;
+        box-shadow: 0 0 12px var(--gold);
+      }
+      @keyframes flowdot {
+        0% {
+          top: 0%;
+          opacity: 0;
+        }
+        20% {
+          opacity: 1;
+        }
+        80% {
+          opacity: 1;
+        }
+        100% {
+          top: 100%;
+          opacity: 0;
+        }
+      }
+
+      /* LLM thinking indicator */
+      .think {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .think__spark {
+        width: 12px;
+        height: 12px;
+        position: relative;
+        animation: spark 1.6s ease-in-out infinite;
+        flex-shrink: 0;
+      }
+      .think__spark::before,
+      .think__spark::after {
+        content: '';
+        position: absolute;
+        background: var(--gold);
+        left: 50%;
+        top: 50%;
+      }
+      .think__spark::before {
+        width: 100%;
+        height: 1px;
+        transform: translate(-50%, -50%);
+      }
+      .think__spark::after {
+        width: 1px;
+        height: 100%;
+        transform: translate(-50%, -50%);
+      }
+      @keyframes spark {
+        0%,
+        100% {
+          transform: rotate(0deg) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: rotate(45deg) scale(1.4);
+          opacity: 0.4;
+        }
+      }
+      .think__text {
+        color: var(--gold);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+      .think__model {
+        margin-left: auto;
+        font-size: 10px;
+        color: var(--text-dim);
+        font-family: var(--tx-mono);
+        padding: 2px 6px;
+        border: 1px solid var(--border);
+      }
+
+      .llm-tokens {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        font-size: 10px;
+        color: var(--text-dim);
+        line-height: 1.4;
+      }
+      .llm-tokens span {
+        padding: 1px 5px;
+        border: 1px solid var(--border);
+        opacity: 0;
+        animation: token-fade 200ms ease forwards;
+      }
+      @keyframes token-fade {
+        from {
+          opacity: 0;
+          transform: translateY(2px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* output items animation */
+      .out-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .out-item {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 10px;
+        align-items: baseline;
+        padding: 6px 0;
+        border-bottom: 1px dashed var(--border);
+        opacity: 0;
+        transform: translateY(4px);
+        animation: out-fade 320ms ease forwards;
+      }
+      .out-item:last-child {
+        border-bottom: none;
+      }
+      @keyframes out-fade {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .badge {
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 2px 5px;
+        border: 1px solid currentColor;
+        color: var(--text-dim);
+        background: transparent;
+      }
+      .badge--fact {
+        color: var(--gold);
+      }
+      .badge--opinion {
+        color: var(--cool);
+      }
+      .badge--new {
+        color: var(--moss);
+      }
+      .badge--skipped {
+        color: var(--text-dim);
+      }
+      .badge--rejected {
+        color: var(--rose);
+      }
+      .badge--rel {
+        color: var(--cool);
+      }
+
+      .out-item__text {
+        color: var(--text);
+        font-size: 12px;
+      }
+      .out-item__sub {
+        color: var(--text-dim);
+        font-size: 10px;
+        font-family: var(--tx-mono);
+      }
+
+      /* highlight animation when entity is "discovered" */
+      @keyframes pulse-gold {
+        0% {
+          box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 60%, transparent);
+        }
+        100% {
+          box-shadow: 0 0 0 8px transparent;
+        }
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Timeline (steps strip)
+         ─────────────────────────────────────────────────────── */
+      .timeline {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 12px 18px 14px;
+      }
+
+      .timeline__rail {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        align-items: start;
+        padding-top: 8px;
+      }
+
+      .timeline__rail::before {
+        content: '';
+        position: absolute;
+        top: 14px;
+        left: calc(100% / 16);
+        right: calc(100% / 16);
+        height: 1px;
+        background: var(--border);
+      }
+      .timeline__rail::after {
+        content: '';
+        position: absolute;
+        top: 14px;
+        left: calc(100% / 16);
+        height: 1px;
+        background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright));
+        width: 0;
+        transition: width 600ms cubic-bezier(0.6, 0, 0.4, 1);
+      }
+
+      .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        position: relative;
+        z-index: 1;
+        padding: 0 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+      }
+      .step:hover .step__bullet {
+        border-color: var(--gold);
+      }
+      .step:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 4px;
+      }
+
+      .step__bullet {
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid var(--border-strong);
+        background: var(--bg);
+        border-radius: 50%;
+        margin-top: 8px;
+        position: relative;
+        transition: all 200ms ease;
+      }
+      .step--done .step__bullet {
+        border-color: var(--gold);
+        background: var(--gold);
+      }
+      .step--current .step__bullet {
+        border-color: var(--gold);
+        background: var(--gold);
+        animation: pulse-gold 1.6s ease-out infinite;
+        transform: scale(1.4);
+      }
+      .step--current .step__bullet::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border: 1px solid color-mix(in oklab, var(--gold) 60%, transparent);
+        border-radius: 50%;
+      }
+
+      .step__num {
+        font-family: var(--tx-mono);
+        font-size: 9px;
+        color: var(--text-dim);
+        letter-spacing: 0.06em;
+      }
+      .step__name {
+        font-size: 11px;
+        line-height: 1.2;
+        color: var(--text-2);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .step--current .step__name {
+        color: var(--gold);
+      }
+      .step--done .step__name {
+        color: var(--text);
+      }
+      .step__opt {
+        font-size: 9px;
+        font-family: var(--tx-mono);
+        color: var(--text-dim);
+        letter-spacing: 0.08em;
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Controls
+         ─────────────────────────────────────────────────────── */
+      .controls {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 16px;
+        align-items: center;
+        padding-top: 2px;
+      }
+
+      .controls__group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 36px;
+        padding: 0 14px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--tx-mono);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: all 120ms ease;
+      }
+      .btn:hover:not(:disabled) {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .btn--primary {
+        background: var(--gold);
+        color: var(--bg);
+        border-color: var(--gold);
+      }
+      .btn--primary:hover:not(:disabled) {
+        background: var(--gold-bright);
+        color: var(--bg);
+        border-color: var(--gold-bright);
+      }
+      .btn--icon {
+        width: 36px;
+        padding: 0;
+      }
+
+      .speed {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid var(--border);
+        padding: 2px;
+      }
+      .speed button {
+        height: 28px;
+        padding: 0 10px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+      .speed button[aria-pressed='true'] {
+        background: var(--surface-2);
+        color: var(--gold);
+      }
+
+      .scenario {
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        text-align: center;
+        line-height: 1.5;
+      }
+      .scenario strong {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      /* footer hint */
+      .hint {
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-dim);
+        padding-top: 4px;
+        border-top: 1px solid var(--border);
+        font-family: var(--tx-mono);
+        letter-spacing: 0.04em;
+      }
+      .hint kbd {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        padding: 2px 6px;
+        border: 1px solid var(--border-strong);
+        margin: 0 2px;
+        color: var(--text-2);
+      }
+
+      /* utility */
+      .nowrap {
+        white-space: nowrap;
+      }
+      .ellipsis {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* visually hidden */
+      .vh {
+        position: absolute;
+        clip: rect(0 0 0 0);
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
+
+      /* arrow icons (svg-less) */
+      .arrow {
+        width: 10px;
+        height: 10px;
+        display: inline-block;
+        position: relative;
+      }
+      .arrow::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-top: 1.5px solid currentColor;
+        border-right: 1.5px solid currentColor;
+        transform: rotate(45deg) scale(0.6);
+        transform-origin: center;
+      }
+      .arrow--left::before {
+        transform: rotate(225deg) scale(0.6);
+      }
+
+      .play-tri {
+        width: 0;
+        height: 0;
+        border-left: 8px solid currentColor;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+      }
+      .pause-bars {
+        display: inline-flex;
+        gap: 3px;
+      }
+      .pause-bars::before,
+      .pause-bars::after {
+        content: '';
+        width: 3px;
+        height: 11px;
+        background: currentColor;
+      }
+
+      /* ─────────────────────────────────────────────────────────
+         Pipeline-shape "pan" icon (gold pan)
+         ─────────────────────────────────────────────────────── */
+      .pan-icon {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        position: relative;
+      }
+
+      /* gold nuggets falling animation per step "yield" */
+      .nuggets {
+        position: absolute;
+        right: 14px;
+        top: 14px;
+        display: flex;
+        gap: 4px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        color: var(--gold);
+        align-items: center;
+      }
+      .nuggets__n {
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* DB write visual when step==storing */
+      .db-cylinder {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 16px;
+        align-items: center;
+        padding: 8px 0;
+      }
+      .db-cylinder__shape {
+        width: 56px;
+        height: 64px;
+        position: relative;
+        flex-shrink: 0;
+      }
+      .db-cylinder__shape::before,
+      .db-cylinder__shape::after,
+      .db-cylinder__shape > span {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 14px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-2);
+        border-radius: 50%;
+      }
+      .db-cylinder__shape::before {
+        top: 0;
+      }
+      .db-cylinder__shape::after {
+        bottom: 0;
+      }
+      .db-cylinder__shape > span {
+        top: 7px;
+        bottom: 7px;
+        height: auto;
+        border-radius: 0;
+        border-top: none;
+        border-bottom: none;
+      }
+      .db-cylinder__shape > span::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          color-mix(in oklab, var(--gold) 30%, var(--bg-2)),
+          var(--bg-2)
+        );
+        animation: fill-up 1.4s ease-out forwards;
+        transform-origin: bottom;
+        transform: scaleY(0);
+      }
+      @keyframes fill-up {
+        to {
+          transform: scaleY(0.7);
+        }
+      }
+      .db-cylinder__rows {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-family: var(--tx-mono);
+        font-size: 11px;
+        color: var(--text-2);
+      }
+      .db-cylinder__rows span strong {
+        color: var(--gold);
+        font-weight: 500;
+      }
+
+      /* graph viz for relating step */
+      .graph {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 8px;
+      }
+      .graph svg {
+        width: 100%;
+        max-width: 360px;
+        height: auto;
+      }
+      .graph__node {
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        fill: var(--text);
+      }
+
+      /* lang toggle */
+      .langtog {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border: 1px solid var(--border);
+        padding: 2px;
+      }
+      .langtog button {
+        height: 26px;
+        padding: 0 10px;
+        font-family: var(--tx-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--text-dim);
+      }
+      .langtog button[aria-pressed='true'] {
+        background: var(--surface-2);
+        color: var(--gold);
+      }
+
+      [data-lang='en'] [data-show-lang='zh'] {
+        display: none;
+      }
+      [data-lang='zh'] [data-show-lang='en'] {
+        display: none;
+      }
+
+      /* responsive */
+      @media (max-width: 640px) {
+        .top__title {
+          font-size: 22px;
+        }
+        .info__name {
+          font-size: 22px;
+        }
+        .timeline__rail {
+          grid-template-columns: repeat(8, 1fr);
+        }
+        .step__name {
+          font-size: 9px;
+        }
+        .step__opt {
+          display: none;
+        }
+        .controls {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .scenario {
+          order: -1;
+        }
+      }
+
+      /* prefers-reduced-motion */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="top">
+      <div class="top__brand">
+        <div class="top__crumb">
+          <span class="top__crumb-mark" aria-hidden="true">
+            <svg viewBox="0 0 16 16">
+              <path
+                class="pan"
+                d="M2 6 Q2 12 8 12 Q14 12 14 6 L13 5 L3 5 Z"
+              />
+              <circle class="nugget" cx="6" cy="9" r="0.9" />
+              <circle class="nugget" cx="9.5" cy="8.5" r="0.7" />
+              <circle class="nugget" cx="8" cy="10" r="0.5" />
+            </svg>
+          </span>
+          <span data-show-lang="zh">GOLDPAN · PIPELINE</span>
+          <span data-show-lang="en">GOLDPAN · PIPELINE</span>
+        </div>
+        <h1 class="top__title">
+          <span data-show-lang="zh">把一段文本淬炼成 <em>知识图谱</em></span>
+          <span data-show-lang="en">From raw text to a <em>knowledge graph</em></span>
+        </h1>
+        <p class="top__sub">
+          <span data-show-lang="zh"
+            >一篇文章流过 8 步 pipeline，被分类、抽事实、识别实体、对比去重、入库。每一步都有清晰的输入和输出 —
+            下面用一个真实例子带你走完。</span
+          >
+          <span data-show-lang="en"
+            >A single article flows through 8 stages — classified, extracted, matched, deduped, and stored. Each stage has a clear input and output. Walk through a real example below.</span
+          >
+        </p>
+      </div>
+      <div class="top__actions">
+        <div class="langtog" role="group" aria-label="Language">
+          <button data-lang-btn="zh" aria-pressed="true">中</button>
+          <button data-lang-btn="en" aria-pressed="false">EN</button>
+        </div>
+        <button class="pill" id="theme-btn" aria-label="Toggle theme">
+          <span data-show-lang="zh" id="theme-label">浅色</span>
+          <span data-show-lang="en" id="theme-label-en">LIGHT</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <!-- LEFT: stage description -->
+      <aside class="info">
+        <div class="info__step-num">
+          <span data-show-lang="zh">第 <strong id="step-num">1</strong> 步 / 共 8 步</span>
+          <span data-show-lang="en">STEP <strong id="step-num-en">1</strong> / 8</span>
+        </div>
+        <div class="info__progress">
+          <div class="info__progress-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="info__head">
+          <span class="info__kind" id="step-kind"
+            ><span class="dot"></span><span id="step-kind-text"></span
+          ></span>
+          <div class="info__name-en" id="step-name-en"></div>
+          <h2 class="info__name">
+            <span id="step-name-zh"></span>
+            <span class="info__optional" id="step-optional" hidden
+              ><span data-show-lang="zh">可选</span
+              ><span data-show-lang="en">OPTIONAL</span></span
+            >
+          </h2>
+        </div>
+
+        <p class="info__desc" id="step-desc"></p>
+
+        <div class="info__meta">
+          <div class="info__meta-row">
+            <span class="info__meta-key" data-show-lang="zh">输入</span>
+            <span class="info__meta-key" data-show-lang="en">INPUT</span>
+            <span class="info__meta-val" id="step-meta-in"></span>
+          </div>
+          <div class="info__meta-row">
+            <span class="info__meta-key" data-show-lang="zh">输出</span>
+            <span class="info__meta-key" data-show-lang="en">OUTPUT</span>
+            <span class="info__meta-val" id="step-meta-out"></span>
+          </div>
+          <div class="info__meta-row">
+            <span class="info__meta-key" data-show-lang="zh">推荐</span>
+            <span class="info__meta-key" data-show-lang="en">MODEL TIER</span>
+            <span class="info__meta-val" id="step-meta-model"></span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT: visualization -->
+      <section class="viz" aria-live="polite">
+        <div class="viz__label">
+          <span data-show-lang="zh">输入</span>
+          <span data-show-lang="en">INPUT</span>
+        </div>
+        <div class="panel panel--input" id="panel-input"></div>
+
+        <div class="flow">
+          <div class="flow__line"></div>
+          <div class="flow__dot" style="animation-delay: 0s"></div>
+          <div class="flow__dot" style="animation-delay: 0.4s"></div>
+          <div class="flow__dot" style="animation-delay: 0.8s"></div>
+        </div>
+
+        <div class="panel" id="panel-process"></div>
+
+        <div class="flow">
+          <div class="flow__line"></div>
+          <div class="flow__dot" style="animation-delay: 0.1s"></div>
+          <div class="flow__dot" style="animation-delay: 0.5s"></div>
+          <div class="flow__dot" style="animation-delay: 0.9s"></div>
+        </div>
+
+        <div class="viz__label">
+          <span data-show-lang="zh">输出</span>
+          <span data-show-lang="en">OUTPUT</span>
+        </div>
+        <div class="panel panel--output" id="panel-output"></div>
+      </section>
+    </main>
+
+    <!-- Timeline -->
+    <nav class="timeline" aria-label="Pipeline timeline">
+      <div class="timeline__rail" id="rail"></div>
+    </nav>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="controls__group">
+        <button class="btn btn--icon" id="btn-prev" aria-label="Prev">
+          <span class="arrow arrow--left" aria-hidden="true"></span>
+        </button>
+        <button class="btn btn--primary" id="btn-play" style="min-width: 130px">
+          <span id="play-icon" class="play-tri" aria-hidden="true"></span>
+          <span id="play-label" data-show-lang="zh">播放</span>
+          <span id="play-label-en" data-show-lang="en">PLAY</span>
+        </button>
+        <button class="btn btn--icon" id="btn-next" aria-label="Next">
+          <span class="arrow" aria-hidden="true"></span>
+        </button>
+        <button class="btn" id="btn-reset" style="margin-left: 8px">
+          <span data-show-lang="zh">重置</span>
+          <span data-show-lang="en">RESET</span>
+        </button>
+      </div>
+
+      <div class="scenario">
+        <span data-show-lang="zh">场景：</span>
+        <span data-show-lang="en">Scenario:</span>
+        <strong>OpenAI 发布 GPT-5 (TechCrunch)</strong>
+        <br />
+        <span class="mono" style="color: var(--text-dim)"
+          >https://techcrunch.com/2026/openai-gpt-5</span
+        >
+      </div>
+
+      <div class="controls__group">
+        <span class="vh">Speed</span>
+        <div class="speed" role="group" aria-label="Speed">
+          <button data-speed="0.5">0.5×</button>
+          <button data-speed="1" aria-pressed="true">1×</button>
+          <button data-speed="2">2×</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint">
+      <span data-show-lang="zh">
+        <kbd>←</kbd> <kbd>→</kbd> 切换步骤 ·
+        <kbd>Space</kbd> 播放/暂停 ·
+        <kbd>R</kbd> 重置 ·
+        <kbd>1-8</kbd> 直接跳转
+      </span>
+      <span data-show-lang="en">
+        <kbd>←</kbd> <kbd>→</kbd> step ·
+        <kbd>Space</kbd> play/pause ·
+        <kbd>R</kbd> reset ·
+        <kbd>1-8</kbd> jump
+      </span>
+    </p>
+
+    <script>
+      // ─────────────────────────────────────────────────────────
+      // Pipeline step data — drives both the timeline and per-step
+      // viz panels. Each step has bilingual copy + scripted I/O for
+      // the canonical "OpenAI launches GPT-5" example.
+      // ─────────────────────────────────────────────────────────
+      const STEPS = [
+        {
+          key: 'collecting',
+          nameZh: '收集',
+          nameEn: 'Collecting',
+          fullEn: 'COLLECTOR',
+          kind: 'det',
+          kindZh: '确定性步骤',
+          kindEn: 'DETERMINISTIC',
+          descZh:
+            '通过插件按 URL 模式匹配抓取器（playwright / github / RSS …），把网页或文档落成统一的纯文本 + metadata。文本输入则直接走这一步的快路径。',
+          descEn:
+            'Picks a collector plugin by URL pattern (playwright / GitHub / RSS …), and normalizes the page into plain text + metadata. Text inputs take the fast path.',
+          metaInZh: 'URL 或文本',
+          metaInEn: 'URL or text',
+          metaOutZh: 'content + title + metadata',
+          metaOutEn: 'content + title + metadata',
+          metaModelZh: '不调用 LLM',
+          metaModelEn: 'no LLM call',
+          render: renderCollecting,
+        },
+        {
+          key: 'classifying',
+          nameZh: '分类',
+          nameEn: 'Classifying',
+          fullEn: 'CLASSIFIER',
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 轻量',
+          kindEn: 'LLM · LIGHT',
+          descZh:
+            '判断这条内容归到哪个 category 路径，并提取 1-5 个关键词。轻量任务，便宜小模型即可（GPT-4o-mini / Haiku 都可以）。',
+          descEn:
+            'Decides which category path the content belongs to and extracts 1–5 keywords. A light job — cheap small models work (GPT-4o-mini / Haiku).',
+          metaInZh: 'content + URL',
+          metaInEn: 'content + URL',
+          metaOutZh: 'categoryPath + keywords[]',
+          metaOutEn: 'categoryPath + keywords[]',
+          metaModelZh: 'small · GPT-4o-mini / Haiku',
+          metaModelEn: 'small · GPT-4o-mini / Haiku',
+          render: renderClassifying,
+        },
+        {
+          key: 'extracting',
+          nameZh: '抽取',
+          nameEn: 'Extracting',
+          fullEn: 'EXTRACTOR',
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 中等',
+          kindEn: 'LLM · MID',
+          descZh:
+            '从原文抽取 3-10 条「事实陈述」（fact）或「观点」（opinion），每条带类型标签。结构化任务，需要中等及以上能力的模型（Sonnet / GPT-4o）。',
+          descEn:
+            'Extracts 3–10 fact or opinion points from the source — each tagged with its type. A structured task that wants a mid-tier model (Sonnet / GPT-4o).',
+          metaInZh: 'content + category',
+          metaInEn: 'content + category',
+          metaOutZh: 'points[] (fact / opinion)',
+          metaOutEn: 'points[] (fact / opinion)',
+          metaModelZh: 'mid · Sonnet / GPT-4o',
+          metaModelEn: 'mid · Sonnet / GPT-4o',
+          render: renderExtracting,
+        },
+        {
+          key: 'matching',
+          nameZh: '实体匹配',
+          nameEn: 'Matching',
+          fullEn: 'MATCHER',
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 中等',
+          kindEn: 'LLM · MID',
+          descZh:
+            '把抽取出来的 fact 归到具体实体上，并判断「这个实体是不是已有实体的别名」。错配代价高，建议用与抽取器同档的模型，保持一致性。',
+          descEn:
+            'Groups facts under specific entities and asks "is this just an alias of an existing entity?" Mismatches are expensive — use a model on par with the extractor.',
+          metaInZh: 'points[] + 候选实体',
+          metaInEn: 'points[] + entity candidates',
+          metaOutZh: 'entities[] (resolve / draft)',
+          metaOutEn: 'entities[] (resolve / draft)',
+          metaModelZh: 'mid · Sonnet / GPT-4o',
+          metaModelEn: 'mid · Sonnet / GPT-4o',
+          render: renderMatching,
+        },
+        {
+          key: 'relating',
+          nameZh: '实体关系',
+          nameEn: 'Relating',
+          fullEn: 'RELATOR',
+          optional: true,
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 可选',
+          kindEn: 'LLM · OPTIONAL',
+          descZh:
+            '识别实体之间的关系：组织、竞品、合作、技术、因果、其它。开启会显著增加 LLM 成本，适合做知识图谱研究的场景。',
+          descEn:
+            'Detects relationships between entities — organizational / competitive / collaborative / technical / causal / general. Adds noticeable LLM cost; turn on if you care about a real knowledge graph.',
+          metaInZh: 'entities[] + facts',
+          metaInEn: 'entities[] + facts',
+          metaOutZh: 'relations[]',
+          metaOutEn: 'relations[]',
+          metaModelZh: 'mid · Sonnet / GPT-4o',
+          metaModelEn: 'mid · Sonnet / GPT-4o',
+          render: renderRelating,
+        },
+        {
+          key: 'comparing',
+          nameZh: '事实对比',
+          nameEn: 'Comparing',
+          fullEn: 'COMPARATOR',
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 较强',
+          kindEn: 'LLM · STRONG',
+          descZh:
+            '把每个实体下的新事实与已知事实逐条对比：「new」入库，「skipped」当作重复跳过。语义层面的去重，需要较强的理解能力。',
+          descEn:
+            'Compares each new fact against existing facts under the same entity: keep as "new", or "skipped" if it duplicates an existing one. Semantic dedup — wants a strong model.',
+          metaInZh: 'entity 的 new facts vs 旧 facts',
+          metaInEn: 'entity new facts vs DB facts',
+          metaOutZh: 'pointJudgments[] (new/skipped)',
+          metaOutEn: 'pointJudgments[] (new/skipped)',
+          metaModelZh: 'strong · Sonnet / GPT-4o',
+          metaModelEn: 'strong · Sonnet / GPT-4o',
+          render: renderComparing,
+        },
+        {
+          key: 'verifying',
+          nameZh: '事实校验',
+          nameEn: 'Verifying',
+          fullEn: 'VERIFIER',
+          optional: true,
+          kind: 'llm',
+          kindZh: 'LLM 步骤 · 可选',
+          kindEn: 'LLM · OPTIONAL',
+          descZh:
+            '对抽取出的事实做一次反事实校验，剔除幻觉（原文里不存在的内容）。开启会让 LLM 调用大约翻倍，适合精度优先的场景。',
+          descEn:
+            'A second-pass check that prunes hallucinations (claims that aren\'t actually in the source). Roughly doubles LLM calls — turn on when precision matters more than cost.',
+          metaInZh: 'points[] + 原文',
+          metaInEn: 'points[] + source content',
+          metaOutZh: 'verifiedKeys + rejectedKeys',
+          metaOutEn: 'verifiedKeys + rejectedKeys',
+          metaModelZh: 'mid · Sonnet / GPT-4o',
+          metaModelEn: 'mid · Sonnet / GPT-4o',
+          render: renderVerifying,
+        },
+        {
+          key: 'storing',
+          nameZh: '入库',
+          nameEn: 'Storing',
+          fullEn: 'STORE',
+          kind: 'det',
+          kindZh: '确定性步骤',
+          kindEn: 'DETERMINISTIC',
+          descZh:
+            '在一个事务里把通过校验的实体、事实、关系写入 SQLite，同步更新 FTS5 全文索引；如启用 embedding，还会写 sqlite-vec 向量表，供混合检索使用。',
+          descEn:
+            'Atomically writes the verified entities, facts and relations into SQLite, updates the FTS5 full-text index, and (if embedding is on) the sqlite-vec vector tables for hybrid retrieval.',
+          metaInZh: 'validated entities + relations',
+          metaInEn: 'validated entities + relations',
+          metaOutZh: 'rows in SQLite + FTS + vec',
+          metaOutEn: 'rows in SQLite + FTS + vec',
+          metaModelZh: '不调用 LLM',
+          metaModelEn: 'no LLM call',
+          render: renderStoring,
+        },
+      ];
+
+      // ─────────────────────────────────────────────────────────
+      // Per-step renderers — operate on (process, output) panel refs
+      // ─────────────────────────────────────────────────────────
+
+      function el(tag, attrs = {}, children = []) {
+        const e = document.createElement(tag);
+        for (const k of Object.keys(attrs)) {
+          if (k === 'class') e.className = attrs[k];
+          else if (k === 'html') e.innerHTML = attrs[k];
+          else e.setAttribute(k, attrs[k]);
+        }
+        for (const c of children) {
+          if (c == null) continue;
+          if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+          else e.appendChild(c);
+        }
+        return e;
+      }
+
+      function thinking(textZh, textEn, model) {
+        return el('div', { class: 'panel--llm panel', style: 'margin:0;border:0;padding:0;background:transparent' }, [
+          el('div', { class: 'think' }, [
+            el('span', { class: 'think__spark' }),
+            el('span', { class: 'think__text', 'data-show-lang': 'zh' }, [
+              textZh,
+            ]),
+            el('span', { class: 'think__text', 'data-show-lang': 'en' }, [
+              textEn,
+            ]),
+            model
+              ? el('span', { class: 'think__model' }, [model])
+              : null,
+          ]),
+          el('div', { class: 'llm-tokens', id: 'tokens' }),
+        ]);
+      }
+
+      function streamTokens(container, tokens, perTokenMs = 70) {
+        let i = 0;
+        const tick = () => {
+          if (i >= tokens.length) return;
+          const span = el('span', {}, [tokens[i]]);
+          span.style.animationDelay = '0ms';
+          container.appendChild(span);
+          i++;
+          setTimeout(tick, perTokenMs);
+        };
+        tick();
+      }
+
+      function deterministic(textZh, textEn) {
+        return el(
+          'div',
+          { class: 'panel panel--det', style: 'margin:0;border:0;padding:0;background:transparent' },
+          [
+            el('div', { class: 'think' }, [
+              el('span', { class: 'think__spark', style: '--gold:var(--moss); background:var(--moss); width:6px; height:6px; border-radius:50%; animation:none' }),
+              el('span', { class: 'think__text', 'data-show-lang': 'zh', style: 'color:var(--moss)' }, [textZh]),
+              el('span', { class: 'think__text', 'data-show-lang': 'en', style: 'color:var(--moss)' }, [textEn]),
+            ]),
+          ]
+        );
+      }
+
+      // STEP 1 — Collecting
+      function renderCollecting(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['HTTP GET']),
+            el('div', { class: 'mono', style: 'color:var(--gold)' }, [
+              'https://techcrunch.com/2026/openai-gpt-5',
+            ]),
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-top:8px' }, ['Headers · Accept: text/html, ...']),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--det';
+        panels.process.appendChild(
+          el('div', {}, [
+            deterministic(
+              'collector-browser 插件 · 渲染 → 提取正文',
+              'collector-browser plugin · render → extract main content',
+            ),
+            el('div', { style: 'margin-top:10px;display:flex;flex-direction:column;gap:4px;color:var(--text-dim);font-size:11px' }, [
+              el('span', {}, ['→ url 匹配 collector pattern']),
+              el('span', {}, ['→ playwright headless render']),
+              el('span', {}, ['→ readability 提取主体']),
+              el('span', {}, ['→ 长度校验 ≥ 50 chars']),
+            ]),
+          ])
+        );
+
+        panels.output.innerHTML = '';
+        const outputBox = el('div', { class: 'out-list' }, [
+          el('div', { class: 'out-item', style: 'animation-delay:200ms' }, [
+            el('span', { class: 'badge badge--new' }, ['TITLE']),
+            el('span', { class: 'out-item__text' }, [
+              'OpenAI Launches GPT-5 with 1M Context Window',
+            ]),
+            el('span', { class: 'out-item__sub' }, ['']),
+          ]),
+          el('div', { class: 'out-item', style: 'animation-delay:400ms' }, [
+            el('span', { class: 'badge badge--fact' }, ['BODY']),
+            el('span', { class: 'out-item__text', style: 'color:var(--text-2);font-size:11px' }, [
+              '"OpenAI today announced GPT-5, expanding the context window to 1 million tokens. The model brings multimodal understanding ... API pricing is set at half of GPT-4o..."',
+            ]),
+            el('span', { class: 'out-item__sub' }, ['8.2 KB']),
+          ]),
+          el('div', { class: 'out-item', style: 'animation-delay:600ms' }, [
+            el('span', { class: 'badge' }, ['META']),
+            el('span', { class: 'out-item__text mono', style: 'font-size:10px' }, [
+              'lang=en · published=2026-05-08 · author=Devin Coldewey',
+            ]),
+            el('span', { class: 'out-item__sub' }, ['']),
+          ]),
+        ]);
+        panels.output.appendChild(outputBox);
+      }
+
+      // STEP 2 — Classifying
+      function renderClassifying(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['CONTENT (truncated)']),
+            el('div', { class: 'mono', style: 'color:var(--text-2);font-size:11px' }, [
+              '"OpenAI today announced GPT-5, expanding the context window to 1 million tokens..."',
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '分类器 LLM · 选择 category 路径，抽取关键词',
+            'Classifier LLM · pick category path, extract keywords',
+            'gpt-4o-mini',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['{', '"categoryPath"', ':', '"AI/Models/OpenAI"', ',', '"keywords"', ':', '[', '"GPT-5"', ',', '"context window"', ',', '"multimodal"', ']', '}'],
+          70,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'out-list' }, [
+            el('div', { class: 'out-item', style: 'animation-delay:1500ms' }, [
+              el('span', { class: 'badge badge--new' }, ['CATEGORY']),
+              el('span', { class: 'out-item__text mono' }, ['AI / Models / OpenAI']),
+              el('span', { class: 'out-item__sub' }, ['→ 自动建路径']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:1700ms' }, [
+              el('span', { class: 'badge badge--fact' }, ['KEYWORDS']),
+              el('span', { class: 'out-item__text mono' }, ['GPT-5 · context window · multimodal']),
+              el('span', { class: 'out-item__sub' }, ['3 / 5']),
+            ]),
+          ])
+        );
+      }
+
+      // STEP 3 — Extracting
+      function renderExtracting(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['CONTENT + CATEGORY']),
+            el('div', { class: 'mono', style: 'color:var(--text-2);font-size:11px' }, [
+              'category=AI/Models/OpenAI · keywords=GPT-5,context window,multimodal',
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '抽取器 LLM · 从原文抽取 3-10 条 fact / opinion',
+            'Extractor LLM · pulls 3–10 fact / opinion points',
+            'claude-sonnet-4',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['scanning ¶1', '...', 'claim 1', 'detected', 'scanning ¶2', '...', 'claim 2', 'detected', '+ claim 3', '...'],
+          120,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'out-list' }, [
+            el('div', { class: 'out-item', style: 'animation-delay:1700ms' }, [
+              el('span', { class: 'badge badge--fact' }, ['FACT']),
+              el('span', { class: 'out-item__text' }, ['OpenAI 于 2026-05-08 发布 GPT-5。']),
+              el('span', { class: 'out-item__sub' }, ['p1']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:1900ms' }, [
+              el('span', { class: 'badge badge--fact' }, ['FACT']),
+              el('span', { class: 'out-item__text' }, ['GPT-5 上下文窗口扩展到 1M tokens。']),
+              el('span', { class: 'out-item__sub' }, ['p2']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:2100ms' }, [
+              el('span', { class: 'badge badge--fact' }, ['FACT']),
+              el('span', { class: 'out-item__text' }, ['GPT-5 API 价格为 GPT-4o 的 50%。']),
+              el('span', { class: 'out-item__sub' }, ['p3']),
+            ]),
+          ])
+        );
+      }
+
+      // STEP 4 — Matching
+      function renderMatching(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['POINTS + DB CANDIDATES']),
+            el('div', { class: 'out-list' }, [
+              el('div', { class: 'out-item', style: 'animation-delay:0ms' }, [
+                el('span', { class: 'badge badge--fact' }, ['p1']),
+                el('span', { class: 'out-item__text', style: 'font-size:11px' }, ['OpenAI 发布 GPT-5']),
+                el('span', { class: 'out-item__sub' }, ['']),
+              ]),
+              el('div', { class: 'out-item', style: 'animation-delay:0ms' }, [
+                el('span', { class: 'badge' }, ['DB']),
+                el('span', { class: 'out-item__text', style: 'color:var(--text-dim);font-size:11px' }, [
+                  'entity:42 · OpenAI · alias=[OAI, Open AI Inc.]',
+                ]),
+                el('span', { class: 'out-item__sub' }, ['↻']),
+              ]),
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '匹配器 LLM · 解析实体身份，决定是别名还是新实体',
+            'Matcher LLM · resolve entity identity, alias vs new',
+            'claude-sonnet-4',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['"OpenAI"', '~', 'entity:42', '✓', '"GPT-5"', '~', 'no match', '→', 'draft:gpt-5'],
+          110,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'out-list' }, [
+            el('div', { class: 'out-item', style: 'animation-delay:1700ms' }, [
+              el('span', { class: 'badge badge--skipped' }, ['RESOLVE']),
+              el('span', { class: 'out-item__text' }, [
+                el('strong', {}, ['OpenAI']),
+                ' → entity:42 (existing)',
+              ]),
+              el('span', { class: 'out-item__sub' }, ['p1, p3']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:1900ms' }, [
+              el('span', { class: 'badge badge--new' }, ['DRAFT']),
+              el('span', { class: 'out-item__text' }, [
+                el('strong', {}, ['GPT-5']),
+                ' → draft:gpt-5 (new)',
+              ]),
+              el('span', { class: 'out-item__sub' }, ['p1, p2, p3']),
+            ]),
+          ])
+        );
+      }
+
+      // STEP 5 — Relating
+      function renderRelating(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['MATCHED ENTITIES']),
+            el('div', { class: 'mono', style: 'font-size:11px' }, [
+              '[ entity:42 OpenAI, draft:gpt-5 GPT-5 ]',
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '关系器 LLM · 推断实体之间的连接',
+            'Relator LLM · infers links between entities',
+            'claude-sonnet-4',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['OpenAI', '—[organizational]→', 'GPT-5', '"OpenAI 是 GPT-5 的发布方"'],
+          150,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'graph' }, [
+            el('div', { html: `
+              <svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--gold)" />
+                  </marker>
+                </defs>
+                <g>
+                  <circle cx="60" cy="55" r="24" fill="none" stroke="var(--gold)" stroke-width="1.5" />
+                  <text x="60" y="58" text-anchor="middle" class="graph__node" fill="var(--text)">OpenAI</text>
+                  <text x="60" y="92" text-anchor="middle" class="graph__node" fill="var(--text-dim)" font-size="9">entity:42</text>
+                </g>
+                <g>
+                  <line x1="86" y1="55" x2="270" y2="55" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arrow)">
+                    <animate attributeName="stroke-dashoffset" from="6" to="0" dur="0.7s" repeatCount="indefinite" />
+                  </line>
+                  <text x="178" y="48" text-anchor="middle" class="graph__node" fill="var(--cool)" font-size="10">organizational</text>
+                  <text x="178" y="68" text-anchor="middle" class="graph__node" fill="var(--text-dim)" font-size="9">"OpenAI 发布"</text>
+                </g>
+                <g>
+                  <rect x="270" y="33" width="70" height="44" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" />
+                  <text x="305" y="58" text-anchor="middle" class="graph__node" fill="var(--text)">GPT-5</text>
+                  <text x="305" y="92" text-anchor="middle" class="graph__node" fill="var(--text-dim)" font-size="9">draft:gpt-5</text>
+                </g>
+              </svg>
+            ` }),
+          ])
+        );
+      }
+
+      // STEP 6 — Comparing
+      function renderComparing(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, [
+              'entity:42 OpenAI · 新事实 vs DB',
+            ]),
+            el('div', { class: 'out-list' }, [
+              el('div', { class: 'out-item', style: 'animation-delay:0ms' }, [
+                el('span', { class: 'badge badge--fact' }, ['NEW p1']),
+                el('span', { class: 'out-item__text', style: 'font-size:11px' }, ['OpenAI 发布 GPT-5 (2026-05-08)']),
+                el('span', { class: 'out-item__sub' }, ['']),
+              ]),
+              el('div', { class: 'out-item', style: 'animation-delay:0ms' }, [
+                el('span', { class: 'badge badge--fact' }, ['NEW p3']),
+                el('span', { class: 'out-item__text', style: 'font-size:11px' }, ['GPT-5 价格为 GPT-4o 的 50%']),
+                el('span', { class: 'out-item__sub' }, ['']),
+              ]),
+              el('div', { class: 'out-item', style: 'animation-delay:0ms' }, [
+                el('span', { class: 'badge' }, ['DB']),
+                el('span', { class: 'out-item__text', style: 'color:var(--text-dim);font-size:11px' }, ['"GPT-5 价格便宜" (2 weeks ago)']),
+                el('span', { class: 'out-item__sub' }, ['']),
+              ]),
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '对比器 LLM · 语义去重，判断 new vs skipped',
+            'Comparator LLM · semantic dedup — new vs skipped',
+            'claude-sonnet-4',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['p1', '?', 'no match', '→', 'NEW', 'p3', '?', 'matches', '"价格便宜"', '→', 'SKIPPED'],
+          110,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'out-list' }, [
+            el('div', { class: 'out-item', style: 'animation-delay:1700ms' }, [
+              el('span', { class: 'badge badge--new' }, ['NEW']),
+              el('span', { class: 'out-item__text' }, ['p1 · OpenAI 发布 GPT-5 (2026-05-08)']),
+              el('span', { class: 'out-item__sub' }, ['→ insert']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:1900ms' }, [
+              el('span', { class: 'badge badge--skipped' }, ['SKIPPED']),
+              el('span', { class: 'out-item__text', style: 'color:var(--text-dim)' }, [
+                'p3 · matches existing fact #813',
+              ]),
+              el('span', { class: 'out-item__sub' }, ['dedup']),
+            ]),
+          ])
+        );
+      }
+
+      // STEP 7 — Verifying
+      function renderVerifying(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['EXTRACTED POINTS + 原文']),
+            el('div', { class: 'mono', style: 'font-size:11px;color:var(--text-2)' }, [
+              '"OpenAI today announced GPT-5, expanding the context window to 1 million tokens. ... API pricing is set at half of GPT-4o..."',
+            ]),
+            el('div', { style: 'margin-top:8px;font-size:11px' }, [
+              el('span', { class: 'badge badge--fact', style: 'margin-right:6px' }, ['p1']),
+              'OpenAI 发布 GPT-5',
+              el('br'),
+              el('span', { class: 'badge badge--fact', style: 'margin-right:6px;margin-top:4px;display:inline-block' }, ['p2']),
+              'GPT-5 上下文 1M tokens',
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--llm';
+        panels.process.appendChild(
+          thinking(
+            '校验器 LLM · 反查每条事实是否真在原文里',
+            'Verifier LLM · checks each fact actually appears in source',
+            'claude-sonnet-4',
+          )
+        );
+        const tokensEl = panels.process.querySelector('#tokens');
+        streamTokens(
+          tokensEl,
+          ['p1', '...', 'found', '✓', 'p2', '...', 'found', '✓', 'p3', '...', 'found', '✓'],
+          110,
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'out-list' }, [
+            el('div', { class: 'out-item', style: 'animation-delay:1700ms' }, [
+              el('span', { class: 'badge badge--new' }, ['VERIFIED']),
+              el('span', { class: 'out-item__text' }, ['p1 · p2 · p3 — 全部通过']),
+              el('span', { class: 'out-item__sub' }, ['3 / 3']),
+            ]),
+            el('div', { class: 'out-item', style: 'animation-delay:1900ms' }, [
+              el('span', { class: 'badge badge--rejected' }, ['REJECTED']),
+              el('span', { class: 'out-item__text', style: 'color:var(--text-dim)' }, [
+                el('span', { 'data-show-lang': 'zh' }, ['（无幻觉）']),
+                el('span', { 'data-show-lang': 'en' }, ['(none)']),
+              ]),
+              el('span', { class: 'out-item__sub' }, ['0']),
+            ]),
+          ])
+        );
+      }
+
+      // STEP 8 — Storing
+      function renderStoring(panels) {
+        panels.input.innerHTML = '';
+        panels.input.appendChild(
+          el('div', {}, [
+            el('div', { style: 'color:var(--text-dim);font-size:10px;margin-bottom:6px' }, ['VALIDATED RESULT']),
+            el('div', { class: 'mono', style: 'font-size:11px' }, [
+              '2 entities · 2 new facts · 1 relation',
+            ]),
+          ])
+        );
+
+        panels.process.innerHTML = '';
+        panels.process.className = 'panel panel--det';
+        panels.process.appendChild(
+          el('div', {}, [
+            deterministic(
+              'BEGIN TRANSACTION · 单事务原子写入',
+              'BEGIN TRANSACTION · atomic write',
+            ),
+            el('div', { style: 'margin-top:10px;display:flex;flex-direction:column;gap:4px;color:var(--text-dim);font-size:11px;font-family:var(--tx-mono)' }, [
+              el('span', {}, ['INSERT entities (1) · UPDATE entities (1)']),
+              el('span', {}, ['INSERT knowledge_points (2)']),
+              el('span', {}, ['INSERT entity_relations (1)']),
+              el('span', {}, ['UPDATE FTS5 index']),
+              el('span', { 'data-show-lang': 'zh' }, ['INSERT vec0 向量 (若启用 embedding)']),
+              el('span', { 'data-show-lang': 'en' }, ['INSERT vec0 vectors (if embedding on)']),
+              el('span', { style: 'color:var(--moss)' }, ['COMMIT']),
+            ]),
+          ])
+        );
+
+        panels.output.innerHTML = '';
+        panels.output.appendChild(
+          el('div', { class: 'db-cylinder' }, [
+            el('div', { class: 'db-cylinder__shape' }, [el('span')]),
+            el('div', { class: 'db-cylinder__rows' }, [
+              el('span', {}, [
+                '+ entity ',
+                el('strong', {}, ['GPT-5']),
+                ' #1029',
+              ]),
+              el('span', {}, [
+                '↻ entity ',
+                el('strong', {}, ['OpenAI']),
+                ' #42 ',
+                el('span', { style: 'color:var(--text-dim)' }, ['(updated)']),
+              ]),
+              el('span', {}, ['+ fact #2741 OpenAI 发布 GPT-5']),
+              el('span', {}, ['+ fact #2742 GPT-5 上下文 1M']),
+              el('span', { style: 'color:var(--cool)' }, ['+ relation OpenAI →[org]→ GPT-5']),
+              el('span', { style: 'color:var(--moss);margin-top:4px;display:flex;align-items:center;gap:4px' }, [
+                el('span', { 'data-show-lang': 'zh' }, ['✓ 入库完成 · 任务结束']),
+                el('span', { 'data-show-lang': 'en' }, ['✓ Stored · task done']),
+              ]),
+            ]),
+          ])
+        );
+      }
+
+      // ─────────────────────────────────────────────────────────
+      // App state + control
+      // ─────────────────────────────────────────────────────────
+      const $ = (id) => document.getElementById(id);
+      const refs = {
+        rail: $('rail'),
+        progressFill: $('progress-fill'),
+        stepNum: $('step-num'),
+        stepNumEn: $('step-num-en'),
+        stepKind: $('step-kind'),
+        stepKindText: $('step-kind-text'),
+        stepNameEn: $('step-name-en'),
+        stepNameZh: $('step-name-zh'),
+        stepOptional: $('step-optional'),
+        stepDesc: $('step-desc'),
+        stepMetaIn: $('step-meta-in'),
+        stepMetaOut: $('step-meta-out'),
+        stepMetaModel: $('step-meta-model'),
+        panels: {
+          input: $('panel-input'),
+          process: $('panel-process'),
+          output: $('panel-output'),
+        },
+        btnPlay: $('btn-play'),
+        btnPrev: $('btn-prev'),
+        btnNext: $('btn-next'),
+        btnReset: $('btn-reset'),
+      };
+
+      const state = {
+        idx: 0,
+        playing: false,
+        speed: 1,
+        timer: null,
+        lang: 'zh',
+      };
+
+      // build timeline
+      function buildTimeline() {
+        refs.rail.innerHTML = '';
+        STEPS.forEach((s, i) => {
+          const btn = el('button', { class: 'step', 'data-idx': String(i) }, [
+            el('span', { class: 'step__num mono' }, [`0${i + 1}`]),
+            el('span', { class: 'step__bullet' }),
+            el('span', { class: 'step__name', 'data-show-lang': 'zh' }, [s.nameZh]),
+            el('span', { class: 'step__name', 'data-show-lang': 'en' }, [s.nameEn]),
+            s.optional
+              ? el('span', { class: 'step__opt' }, [
+                  el('span', { 'data-show-lang': 'zh' }, ['可选']),
+                  el('span', { 'data-show-lang': 'en' }, ['opt']),
+                ])
+              : null,
+          ]);
+          btn.addEventListener('click', () => {
+            pause();
+            jump(i);
+          });
+          refs.rail.appendChild(btn);
+        });
+      }
+
+      function paintTimeline() {
+        const bullets = refs.rail.querySelectorAll('.step');
+        bullets.forEach((b, i) => {
+          b.classList.toggle('step--current', i === state.idx);
+          b.classList.toggle('step--done', i < state.idx);
+        });
+        // gold rail fill
+        const rail = refs.rail;
+        const pct = state.idx / (STEPS.length - 1);
+        rail.style.setProperty('--rail-w', `${pct * 100}%`);
+        const railFillRule = `--rail-w:${pct * 100}%`;
+        // re-write ::after width via custom prop - we set via inline style on the actual rail
+        rail.style.setProperty('--fill', `${(pct * 100).toFixed(2)}%`);
+        const oldStyle = document.getElementById('rail-style');
+        if (oldStyle) oldStyle.remove();
+        const s = document.createElement('style');
+        s.id = 'rail-style';
+        s.textContent = `.timeline__rail::after { width: calc(${(pct * 100).toFixed(2)}% * (1 - 2/8) ); }`;
+        document.head.appendChild(s);
+      }
+
+      function paintInfo() {
+        const s = STEPS[state.idx];
+        refs.stepNum.textContent = String(state.idx + 1);
+        refs.stepNumEn.textContent = String(state.idx + 1);
+        refs.stepKind.dataset.kind = s.kind;
+        refs.stepKindText.innerHTML = '';
+        refs.stepKindText.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.kindZh])
+        );
+        refs.stepKindText.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.kindEn])
+        );
+        refs.stepNameEn.textContent = s.fullEn;
+        refs.stepNameZh.innerHTML = '';
+        refs.stepNameZh.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.nameZh])
+        );
+        refs.stepNameZh.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.nameEn])
+        );
+        refs.stepOptional.hidden = !s.optional;
+        refs.stepDesc.innerHTML = '';
+        refs.stepDesc.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.descZh])
+        );
+        refs.stepDesc.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.descEn])
+        );
+        refs.stepMetaIn.innerHTML = '';
+        refs.stepMetaIn.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.metaInZh])
+        );
+        refs.stepMetaIn.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.metaInEn])
+        );
+        refs.stepMetaOut.innerHTML = '';
+        refs.stepMetaOut.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.metaOutZh])
+        );
+        refs.stepMetaOut.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.metaOutEn])
+        );
+        refs.stepMetaModel.innerHTML = '';
+        refs.stepMetaModel.appendChild(
+          el('span', { 'data-show-lang': 'zh' }, [s.metaModelZh])
+        );
+        refs.stepMetaModel.appendChild(
+          el('span', { 'data-show-lang': 'en' }, [s.metaModelEn])
+        );
+
+        const pct = ((state.idx + 1) / STEPS.length) * 100;
+        refs.progressFill.style.transform = `scaleX(${pct / 100})`;
+      }
+
+      function paintViz() {
+        // reset panel classes
+        refs.panels.process.className = 'panel';
+        STEPS[state.idx].render(refs.panels);
+        // re-apply lang visibility for newly inserted nodes
+        applyLang();
+      }
+
+      function paint() {
+        paintInfo();
+        paintViz();
+        paintTimeline();
+      }
+
+      // ─── playback ──────────────────────────────────
+      function jump(i) {
+        if (i < 0) i = 0;
+        if (i >= STEPS.length) i = STEPS.length - 1;
+        state.idx = i;
+        paint();
+      }
+
+      function next() {
+        if (state.idx >= STEPS.length - 1) {
+          pause();
+          return false;
+        }
+        jump(state.idx + 1);
+        return true;
+      }
+
+      function prev() {
+        jump(state.idx - 1);
+      }
+
+      function play() {
+        if (state.idx >= STEPS.length - 1) {
+          // restart from 0
+          jump(0);
+        }
+        state.playing = true;
+        updatePlayBtn();
+        const baseDelay = 4500;
+        const tick = () => {
+          if (!state.playing) return;
+          if (!next()) {
+            state.playing = false;
+            updatePlayBtn();
+            return;
+          }
+          state.timer = setTimeout(tick, baseDelay / state.speed);
+        };
+        state.timer = setTimeout(tick, baseDelay / state.speed);
+      }
+
+      function pause() {
+        state.playing = false;
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+        updatePlayBtn();
+      }
+
+      function reset() {
+        pause();
+        jump(0);
+      }
+
+      function updatePlayBtn() {
+        const icon = $('play-icon');
+        const labelZh = $('play-label');
+        const labelEn = $('play-label-en');
+        if (state.playing) {
+          icon.className = 'pause-bars';
+          labelZh.textContent = '暂停';
+          labelEn.textContent = 'PAUSE';
+        } else {
+          icon.className = 'play-tri';
+          labelZh.textContent = state.idx === STEPS.length - 1 ? '重播' : '播放';
+          labelEn.textContent = state.idx === STEPS.length - 1 ? 'REPLAY' : 'PLAY';
+        }
+      }
+
+      // ─── language + theme ──────────────────────────
+      function applyLang() {
+        document.documentElement.dataset.lang = state.lang;
+        document
+          .querySelectorAll('[data-lang-btn]')
+          .forEach((b) =>
+            b.setAttribute(
+              'aria-pressed',
+              b.dataset.langBtn === state.lang ? 'true' : 'false'
+            )
+          );
+        document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : 'en';
+      }
+
+      function setLang(l) {
+        state.lang = l;
+        applyLang();
+      }
+
+      function toggleTheme() {
+        const cur = document.documentElement.dataset.theme;
+        document.documentElement.dataset.theme = cur === 'dark' ? 'light' : 'dark';
+        const next = document.documentElement.dataset.theme;
+        $('theme-label').textContent = next === 'dark' ? '浅色' : '深色';
+        $('theme-label-en').textContent = next === 'dark' ? 'LIGHT' : 'DARK';
+      }
+
+      // ─── wire up ───────────────────────────────────
+      function wire() {
+        refs.btnPlay.addEventListener('click', () => {
+          if (state.playing) pause();
+          else play();
+        });
+        refs.btnPrev.addEventListener('click', () => {
+          pause();
+          prev();
+        });
+        refs.btnNext.addEventListener('click', () => {
+          pause();
+          next();
+        });
+        refs.btnReset.addEventListener('click', reset);
+
+        document.querySelectorAll('[data-speed]').forEach((b) => {
+          b.addEventListener('click', () => {
+            state.speed = parseFloat(b.dataset.speed);
+            document
+              .querySelectorAll('[data-speed]')
+              .forEach((x) =>
+                x.setAttribute(
+                  'aria-pressed',
+                  x === b ? 'true' : 'false'
+                )
+              );
+            if (state.playing) {
+              pause();
+              play();
+            }
+          });
+        });
+
+        document.querySelectorAll('[data-lang-btn]').forEach((b) => {
+          b.addEventListener('click', () => setLang(b.dataset.langBtn));
+        });
+
+        $('theme-btn').addEventListener('click', toggleTheme);
+
+        document.addEventListener('keydown', (e) => {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+            return;
+          if (e.key === 'ArrowRight') {
+            pause();
+            next();
+            e.preventDefault();
+          } else if (e.key === 'ArrowLeft') {
+            pause();
+            prev();
+            e.preventDefault();
+          } else if (e.key === ' ') {
+            if (state.playing) pause();
+            else play();
+            e.preventDefault();
+          } else if (e.key.toLowerCase() === 'r') {
+            reset();
+            e.preventDefault();
+          } else if (/^[1-8]$/.test(e.key)) {
+            pause();
+            jump(parseInt(e.key, 10) - 1);
+            e.preventDefault();
+          }
+        });
+      }
+
+      // ─── boot ──────────────────────────────────────
+      buildTimeline();
+      wire();
+      applyLang();
+      paint();
+      // small delay then start auto-play to give user a beat to read
+      setTimeout(() => play(), 1200);
+    </script>
+  </body>
+</html>

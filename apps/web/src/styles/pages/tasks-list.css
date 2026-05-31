@@ -1,0 +1,187 @@
+/* /tasks — full task list page (Phase C+, post-redesign management view).
+   Reuses primitives/status-chip.css for the .gp-status chip and primitives/buttons.css
+   for the .gp-btn variants. Only layout / spacing live here. */
+
+.gp-tasks-list-page {
+  /* width: 100% needed because .gp-main is a column flex container — without
+     it, margin: 0 auto suppresses cross-axis stretch and the page shrinks to
+     content (filter "出错" 4 rows narrower than "全部" 13 rows). */
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.gp-tasks-list-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-3);
+  margin-bottom: 20px;
+}
+
+.gp-tasks-list-page__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.gp-tasks-list-page__subtitle {
+  margin: 0;
+  color: var(--gp-ink-muted);
+  font-size: 0.9rem;
+}
+
+.gp-tasks-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.gp-tasks-filters__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--gp-border, #eaeaea);
+  border-radius: 999px;
+  background: var(--gp-surface, #fff);
+  color: var(--gp-ink, #111);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: var(--gp-transition);
+}
+
+.gp-tasks-filters__tab:hover {
+  border-color: var(--gp-border-strong, #ccc);
+  background: var(--gp-hover-bg, #f0f0f0);
+}
+
+.gp-tasks-filters__tab[data-active] {
+  border-color: var(--gp-accent);
+  background: color-mix(in srgb, var(--gp-accent) 8%, transparent);
+  color: var(--gp-accent);
+}
+
+.gp-tasks-filters__count {
+  font-size: 0.75rem;
+  color: var(--gp-ink-faint, #999);
+  font-variant-numeric: tabular-nums;
+}
+
+.gp-tasks-filters__tab[data-active] .gp-tasks-filters__count {
+  color: color-mix(in srgb, var(--gp-accent) 70%, var(--gp-ink-muted));
+}
+
+.gp-tasks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gp-space-2);
+}
+
+.gp-tasks-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gp-border);
+  border-radius: 8px;
+  background: var(--gp-surface);
+  transition: var(--gp-transition);
+}
+
+.gp-tasks-row:hover {
+  border-color: var(--gp-border-strong, #ccc);
+}
+
+.gp-tasks-row__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.gp-tasks-row__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.gp-tasks-row__title {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.gp-tasks-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--gp-ink-muted);
+  font-size: 0.85rem;
+}
+
+.gp-tasks-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.gp-tasks-list-page__truncated-hint {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gp-ink-faint);
+}
+
+.gp-tasks-list-page__action-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--gp-danger);
+  background: var(--gp-danger-bg);
+  color: var(--gp-danger-ink);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.gp-tasks-list-page__action-error-dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+@media (max-width: 600px) {
+  .gp-tasks-row {
+    flex-wrap: wrap;
+  }
+
+  .gp-tasks-row__actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+
+  .gp-tasks-row__title {
+    font-size: 0.95rem;
+  }
+}

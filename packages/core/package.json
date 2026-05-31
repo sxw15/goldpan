@@ -1,0 +1,188 @@
+{
+  "name": "@goldpan/core",
+  "license": "AGPL-3.0-or-later",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "drizzle"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./src/index.ts"
+    },
+    "./bootstrap": {
+      "types": "./dist/bootstrap.d.ts",
+      "import": "./dist/bootstrap.mjs",
+      "default": "./src/bootstrap.ts"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.mjs",
+      "default": "./src/errors.ts"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "import": "./dist/config/index.mjs",
+      "default": "./src/config/index.ts"
+    },
+    "./db": {
+      "types": "./dist/db/connection.d.ts",
+      "import": "./dist/db/connection.mjs",
+      "default": "./src/db/connection.ts"
+    },
+    "./db/schema": {
+      "types": "./dist/db/schema.d.ts",
+      "import": "./dist/db/schema.mjs",
+      "default": "./src/db/schema.ts"
+    },
+    "./db/sql-fragments": {
+      "types": "./dist/db/sql-fragments.d.ts",
+      "import": "./dist/db/sql-fragments.mjs",
+      "default": "./src/db/sql-fragments.ts"
+    },
+    "./db/migrate": {
+      "types": "./dist/db/migrate.d.ts",
+      "import": "./dist/db/migrate.mjs",
+      "default": "./src/db/migrate.ts"
+    },
+    "./db/repositories": {
+      "types": "./dist/db/repositories/index.d.ts",
+      "import": "./dist/db/repositories/index.mjs",
+      "default": "./src/db/repositories/index.ts"
+    },
+    "./i18n": {
+      "types": "./dist/i18n/index.d.ts",
+      "import": "./dist/i18n/index.mjs",
+      "default": "./src/i18n/index.ts"
+    },
+    "./llm": {
+      "types": "./dist/llm/index.d.ts",
+      "import": "./dist/llm/index.mjs",
+      "default": "./src/llm/index.ts"
+    },
+    "./llm/reasoning-tiers": {
+      "types": "./dist/llm/reasoning-tiers.d.ts",
+      "import": "./dist/llm/reasoning-tiers.mjs",
+      "default": "./src/llm/reasoning-tiers.ts"
+    },
+    "./logger": {
+      "types": "./dist/logger/index.d.ts",
+      "import": "./dist/logger/index.mjs",
+      "default": "./src/logger/index.ts"
+    },
+    "./pipeline": {
+      "types": "./dist/pipeline/index.d.ts",
+      "import": "./dist/pipeline/index.mjs",
+      "default": "./src/pipeline/index.ts"
+    },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.mjs",
+      "default": "./src/plugins/index.ts"
+    },
+    "./prompts": {
+      "types": "./dist/prompts/index.d.ts",
+      "import": "./dist/prompts/index.mjs",
+      "default": "./src/prompts/index.ts"
+    },
+    "./submit": {
+      "types": "./dist/submit.d.ts",
+      "import": "./dist/submit.mjs",
+      "default": "./src/submit.ts"
+    },
+    "./input": {
+      "types": "./dist/input.d.ts",
+      "import": "./dist/input.mjs",
+      "default": "./src/input.ts"
+    },
+    "./intent": {
+      "types": "./dist/intent/index.d.ts",
+      "import": "./dist/intent/index.mjs",
+      "default": "./src/intent/index.ts"
+    },
+    "./query": {
+      "types": "./dist/query/index.d.ts",
+      "import": "./dist/query/index.mjs",
+      "default": "./src/query/index.ts"
+    },
+    "./conversation": {
+      "types": "./dist/conversation/index.d.ts",
+      "import": "./dist/conversation/index.mjs",
+      "default": "./src/conversation/index.ts"
+    },
+    "./embedding": {
+      "types": "./dist/embedding/index.d.ts",
+      "import": "./dist/embedding/index.mjs",
+      "default": "./src/embedding/index.ts"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "import": "./dist/utils/index.mjs",
+      "default": "./src/utils/index.ts"
+    },
+    "./worker": {
+      "types": "./dist/worker/index.d.ts",
+      "import": "./dist/worker/index.mjs",
+      "default": "./src/worker/index.ts"
+    },
+    "./operations": {
+      "types": "./dist/operations/index.d.ts",
+      "import": "./dist/operations/index.mjs",
+      "default": "./src/operations/index.ts"
+    },
+    "./onboarding": {
+      "types": "./dist/onboarding/index.d.ts",
+      "import": "./dist/onboarding/index.mjs",
+      "default": "./src/onboarding/index.ts"
+    },
+    "./digest-link/sign": {
+      "types": "./dist/digest-link/sign.d.ts",
+      "import": "./dist/digest-link/sign.mjs",
+      "default": "./src/digest-link/sign.ts"
+    },
+    "./lib/tz": {
+      "types": "./dist/lib/tz.d.ts",
+      "import": "./dist/lib/tz.mjs",
+      "default": "./src/lib/tz.ts"
+    }
+  },
+  "scripts": {
+    "build": "unbuild",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.78",
+    "@ai-sdk/deepseek": "^2.0.35",
+    "@ai-sdk/google": "^3.0.75",
+    "@ai-sdk/openai": "^3.0.64",
+    "@ai-sdk/openai-compatible": "^2.0.47",
+    "@mozilla/readability": "^0.5.0",
+    "ai": "^6.0.185",
+    "better-sqlite3": "^12.8.0",
+    "drizzle-orm": "^0.45.0",
+    "handlebars": "^4.7.8",
+    "ipaddr.js": "^2.2.0",
+    "jsdom": "^26.0.0",
+    "sqlite-vec": "^0.1.6",
+    "tslog": "^4.9.3",
+    "turndown": "^7.2.0",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.0.0",
+    "@types/turndown": "^5.0.5",
+    "drizzle-kit": "^0.31.0",
+    "typescript": "^5.9.0",
+    "unbuild": "^3.6.1",
+    "vitest": "^4.1.0"
+  }
+}

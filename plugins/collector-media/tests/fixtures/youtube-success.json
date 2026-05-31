@@ -1,0 +1,12 @@
+{
+  "id": "abc123",
+  "title": "Demo",
+  "uploader": "Tester",
+  "channel": "Test Ch",
+  "upload_date": "20260101",
+  "duration": 90,
+  "description": "desc",
+  "webpage_url": "https://www.youtube.com/watch?v=abc123",
+  "subtitles": { "en": [{ "ext": "vtt" }] },
+  "automatic_captions": {}
+}

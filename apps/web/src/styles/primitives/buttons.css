@@ -1,0 +1,153 @@
+/* Button primitives — single .gp-btn[data-variant][data-size] (Phase B1 收口).
+   6 variant: ghost / primary / secondary / danger / track / icon
+   2 size: sm / md (default)
+   .gp-btn.gp-theme-toggle 修饰: 32×32 ghost icon（与顶栏历史/设置一致） */
+
+/* ─── Base ─────────────────────────────────────────────────────────────── */
+
+.gp-btn {
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gp-space-1);
+  border-radius: var(--gp-radius-sm);
+  text-decoration: none;
+  /* CJK 字符可在任意字符间换行,放在窄 flex 容器里两字按钮(「应用」/
+     「保存」)会被竖排。chips / status-chip 等姊妹 primitive 已有同款
+     nowrap,这里补齐到统一基线。 */
+  white-space: nowrap;
+  transition:
+    color var(--gp-transition),
+    background var(--gp-transition),
+    border-color var(--gp-transition),
+    opacity var(--gp-transition);
+}
+
+.gp-btn:disabled,
+.gp-btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ─── Sizes ────────────────────────────────────────────────────────────── */
+
+/* md (default) */
+.gp-btn,
+.gp-btn[data-size="md"] {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.65rem;
+}
+
+/* sm */
+.gp-btn[data-size="sm"] {
+  font-size: 0.75rem;
+  padding: 4px 9px;
+}
+
+/* ─── Variants ─────────────────────────────────────────────────────────── */
+
+/* ghost — transparent, ink-muted, hover hover-bg (used in topnav, chat-header,
+   task-popover, task-log-panel, task-bubble/note-bubble secondary actions) */
+.gp-btn[data-variant="ghost"] {
+  color: var(--gp-ink-muted);
+  background: transparent;
+  border: 1px solid transparent;
+}
+.gp-btn[data-variant="ghost"]:hover:not(:disabled) {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+/* primary — ink solid bg, surface text (used in task-detail primary, settings save,
+   chat task-bubble.is-primary) */
+.gp-btn[data-variant="primary"] {
+  color: var(--gp-on-ink);
+  background: var(--gp-ink);
+  border: 1px solid var(--gp-ink);
+}
+.gp-btn[data-variant="primary"]:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+/* secondary — surface bg + bordered ink, hover ink border (task-detail copy/cancel,
+   settings unkind sbtn). Visually distinct from ghost (flat transparent). */
+.gp-btn[data-variant="secondary"] {
+  color: var(--gp-ink);
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border-strong);
+}
+.gp-btn[data-variant="secondary"]:hover:not(:disabled) {
+  border-color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+}
+
+/* danger — red ink, transparent bg, red border (used in task-card delete,
+   task-detail discard, settings danger) */
+.gp-btn[data-variant="danger"] {
+  color: var(--gp-danger);
+  background: transparent;
+  border: 1px solid var(--gp-badge-err-border);
+}
+.gp-btn[data-variant="danger"]:hover:not(:disabled) {
+  border-color: var(--gp-danger);
+  background: var(--gp-badge-err-bg);
+}
+
+/* track — bordered ink + accent hover (library/inspector "+" track CTA) */
+.gp-btn[data-variant="track"] {
+  font-size: 12px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--gp-border-strong);
+  color: var(--gp-ink);
+}
+.gp-btn[data-variant="track"]:hover:not(:disabled) {
+  background: var(--gp-hover-bg);
+  border-color: var(--gp-ink);
+}
+
+/* icon — square (md=30 surface, sm=28 transparent), used in digest-toolbar,
+   inspector header back/close) */
+.gp-btn[data-variant="icon"] {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: var(--gp-surface);
+  border: 1px solid var(--gp-border);
+  color: var(--gp-ink-muted);
+}
+.gp-btn[data-variant="icon"][data-size="sm"] {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+}
+.gp-btn[data-variant="icon"]:hover:not(:disabled) {
+  color: var(--gp-ink);
+  border-color: var(--gp-border-strong);
+}
+
+/* theme-toggle — compact ghost icon to match .gp-topnav__history / __settings (no
+   filled “chip” so the tray reads even). */
+.gp-btn.gp-theme-toggle {
+  display: flex;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--gp-radius-sm);
+  color: var(--gp-ink-muted);
+  box-shadow: none;
+}
+.gp-btn.gp-theme-toggle:hover:not(:disabled) {
+  color: var(--gp-ink);
+  background: var(--gp-hover-bg);
+  border-color: transparent;
+}
+.gp-btn.gp-theme-toggle svg {
+  flex-shrink: 0;
+}

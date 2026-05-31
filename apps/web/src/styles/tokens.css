@@ -1,0 +1,335 @@
+/* Design tokens — :root + [data-theme="dark"]. */
+
+:root {
+  --gp-bg: #fafafa;
+  --gp-surface: #ffffff;
+  --gp-ink: #111111;
+  --gp-ink-muted: #666666;
+  --gp-ink-faint: #999999;
+  --gp-border: #eaeaea;
+  --gp-border-strong: #cccccc;
+  --gp-danger: #c62828;
+  --gp-accent: #6366f1;
+
+  /* Hover & Active States */
+  --gp-hover-bg: #f0f0f0;
+  --gp-active-bg: #ebebeb;
+
+  /* Badges */
+  --gp-badge-done-bg: #f0fdf4;
+  --gp-badge-done-border: #bbf7d0;
+  --gp-badge-done-ink: #166534;
+  --gp-badge-proc-bg: #eff6ff;
+  --gp-badge-proc-border: #bfdbfe;
+  --gp-badge-proc-ink: #1e40af;
+  --gp-badge-err-bg: #fef2f2;
+  --gp-badge-err-border: #fecaca;
+  --gp-badge-err-ink: #991b1b;
+  --gp-badge-warn-ink: #d97706;
+  --gp-badge-ok-ink: #059669;
+
+  --gp-ink-secondary: #6b7280;
+  --gp-surface-raised: #f3f4f6;
+
+  --gp-radius: 6px;
+  --gp-radius-sm: 4px;
+  --gp-radius-md: 8px;
+  --gp-radius-lg: 12px;
+
+  /* Spacing scale — Tailwind-style 4/8/12/16/24/32 ladder.
+     Non-standard values (6/10/14px, 0.375rem etc.) intentionally kept hardcoded
+     where designers chose tighter / looser fits than the ladder allows. */
+  --gp-space-1: 4px;
+  --gp-space-2: 8px;
+  --gp-space-3: 12px;
+  --gp-space-4: 16px;
+  --gp-space-6: 24px;
+  --gp-space-8: 32px;
+  --gp-font-display: var(--font-inter), system-ui, sans-serif;
+  --gp-font-body: var(--font-noto-sc), system-ui, sans-serif;
+  --gp-opinion-accent: #e6a817;
+  --gp-success-ink: #1b5e20;
+  --gp-success-bg: #e8f5e9;
+  --gp-danger-ink: #8b1d1d;
+  --gp-danger-bg: #ffebee;
+  --gp-font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  --gp-font-ui: var(--font-inter), var(--font-noto-sc), system-ui, sans-serif;
+  --gp-transition: 0.15s ease-in-out;
+  --gp-topnav-h: 3rem;
+  /* Sticky offset for elements below .gp-privacy (single-line banner ~42px). */
+  --gp-privacy-sticky-h: 2.625rem;
+
+  /* Inspector overlay (S1: spec §9) */
+  --gp-inspector-width: 400px;
+  --gp-inspector-transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --gp-z-inspector: 45;
+  --gp-z-cmdk: 100;
+  --gp-overlay-backdrop: rgba(0, 0, 0, 0.12);
+
+  /* Library / SourcePayload / EntityPayload full-detail (S2: spec §9) */
+  --gp-library-section-gap: 24px;
+  --gp-library-card-padding: 16px;
+  --gp-source-status-processing: #fff3e0;
+  --gp-source-status-confirmed: #e8f5e9;
+  --gp-source-status-confirmed-empty: #fafafa;
+  --gp-source-status-failed: #ffebee;
+  --gp-source-status-discarded: #eceff1;
+  --gp-entity-payload-section-gap: 16px;
+  --gp-entity-payload-chip-gap: 6px;
+
+  /* S3-S5: SourceViewPayload / InterestPayload / TaskPayload / Tracking (spec §10) */
+  --gp-note-entity-group-gap: 16px;
+  --gp-note-tag-chip-gap: 6px;
+  --gp-interest-query-chip-gap: 6px;
+  --gp-interest-execution-row-height: 28px;
+  --gp-interest-status-running: var(--gp-badge-warn-ink);
+  --gp-interest-status-done: var(--gp-badge-ok-ink);
+  --gp-interest-status-error: var(--gp-badge-err-ink);
+  --gp-track-cta-bg: var(--gp-accent);
+  --gp-track-cta-bg-hover: color-mix(in srgb, var(--gp-accent) 85%, black);
+
+  /* S7+S8: Task popover / topnav slot / badge dot (spec §10) */
+  --gp-popover-width: 380px;
+  --gp-popover-max-height: 480px;
+  --gp-popover-bg: var(--gp-surface);
+  --gp-popover-border: var(--gp-border);
+  --gp-popover-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --gp-z-popover: 48;
+  --gp-badge-dot-size: 8px;
+  --gp-badge-dot-color: var(--gp-danger);
+
+  /* S11: Digest sections + share banner */
+  --gp-digest-section-gap: 24px;
+  --gp-digest-section-padding: 16px;
+  --gp-digest-hero-padding: 20px;
+  --gp-digest-connection-pair-gap: 8px;
+  --gp-share-banner-bg: rgba(99, 102, 241, 0.12);
+  --gp-share-banner-ink: var(--gp-ink, #111);
+
+  /* Status accent — task-bubble icon/type + pipeline-strip is-active.
+     bg = 12% tint, ink = saturated. dark mode bumps tint to 20%. */
+  --gp-accent-info-bg: rgba(59, 130, 246, 0.12);
+  --gp-accent-info-border: rgba(59, 130, 246, 0.35);
+  --gp-accent-info-ink: #3b82f6;
+  --gp-accent-success-bg: rgba(34, 197, 94, 0.12);
+  --gp-accent-success-ink: #16a34a;
+  --gp-accent-error-bg: rgba(239, 68, 68, 0.12);
+  --gp-accent-error-ink: #ef4444;
+  --gp-accent-warn-bg: rgba(245, 158, 11, 0.12);
+  --gp-accent-warn-ink: #d97706;
+
+  /* Chat default landing chip palette — 4 categorized entry chips.
+     Light: filled tint. Dark: 18% tint of the same hue. */
+  --gp-chip-query-bg: #dbeafe;
+  --gp-chip-query-ink: #2563eb;
+  --gp-chip-submit-bg: #fef3c7;
+  --gp-chip-submit-ink: #d97706;
+  --gp-chip-tracking-bg: #dcfce7;
+  --gp-chip-tracking-ink: #16a34a;
+  --gp-chip-note-bg: #f3e8ff;
+  --gp-chip-note-ink: #9333ea;
+
+  /* User message bubble (chat) — inverted vs surface in light mode. */
+  --gp-user-msg-bg: #18181b;
+  --gp-user-msg-ink: #fafafa;
+
+  /* Contrast ink for backgrounds painted with `--gp-accent` / `--gp-danger` /
+     other saturated chrome (always white — those hues stay dark enough in both
+     themes that white text reads cleanly). */
+  --gp-on-accent: #fff;
+  /* Contrast ink for backgrounds painted with `--gp-ink` itself (primary
+     buttons, preset-card chips, slot chips). Inverts with the theme so we
+     don't end up with white-on-white in dark mode. */
+  --gp-on-ink: #fff;
+
+  /* Avatar palette — c0..c6 initials slot pairs. No dark override (intentional;
+     the muted palette stays legible against any surface). */
+  --gp-avatar-c0-bg: #fef3c7;
+  --gp-avatar-c0-ink: #92400e;
+  --gp-avatar-c1-bg: #dcfce7;
+  --gp-avatar-c1-ink: #14532d;
+  --gp-avatar-c2-bg: #dbeafe;
+  --gp-avatar-c2-ink: #1e3a8a;
+  --gp-avatar-c3-bg: #fce7f3;
+  --gp-avatar-c3-ink: #831843;
+  --gp-avatar-c4-bg: #ede9fe;
+  --gp-avatar-c4-ink: #4c1d95;
+  --gp-avatar-c5-bg: #ccfbf1;
+  --gp-avatar-c5-ink: #134e4a;
+  --gp-avatar-c6-bg: #ffe4e6;
+  --gp-avatar-c6-ink: #881337;
+
+  /* warn-soft-{bg,ink} — pale amber surface (bg) + dark amber ink (ink),
+     paired together for soft alert surfaces. Used by topnav warn badge,
+     privacy banner, task-detail entity summary callout, etc.
+     warn-accent-ink — saturated orange ink for inline emphasis on neutral
+     surfaces (NOT paired with warn-soft-bg). Used by settings notice/cmd
+     accent text and disabled-card icon.
+     All three are single-mode (light only) by design — same approach as
+     the avatar palette, where the saturated amber stays legible on either
+     theme background. */
+  --gp-warn-soft-bg: #fef3c7;
+  --gp-warn-soft-ink: #92400e;
+  --gp-warn-accent-ink: #c2410c;
+
+  /* Settings status chip palette — 5 extra hues beyond the badge family.
+     Single-mode (light only); dark-mode parity left to Phase B/C cleanup. */
+  --gp-badge-amber-bg: #fff7ed;
+  --gp-badge-amber-border: #fed7aa;
+  --gp-badge-amber-ink: #9a3412;
+  --gp-badge-slate-bg: #f1f5f9;
+  --gp-badge-slate-border: #e2e8f0;
+  --gp-badge-slate-ink: #475569;
+  --gp-badge-slate-light-bg: #f8fafc;
+  --gp-badge-slate-light-border: #e2e8f0;
+  --gp-badge-slate-light-ink: #64748b;
+  --gp-badge-info-bg: #eff6ff;
+  --gp-badge-info-border: #bfdbfe;
+  --gp-badge-info-ink: #1e3a8a;
+  --gp-badge-purple-bg: #faf5ff;
+  --gp-badge-purple-border: #e9d5ff;
+  --gp-badge-purple-ink: #6b21a8;
+
+  /* Toast — overlay surface stays dark in both themes (intentional; high
+     contrast against any backdrop). No [data-theme="dark"] override below. */
+  --gp-toast-bg: #1c1b18;
+  --gp-toast-ink: #fafaf7;
+  --gp-toast-success-bg: #14532d;
+  --gp-toast-danger-bg: #7f1d1d;
+  --gp-toast-border: rgba(255, 255, 255, 0.32);
+  --gp-toast-hover: rgba(255, 255, 255, 0.12);
+  --gp-toast-close-ink: rgba(255, 255, 255, 0.7);
+
+  /* Tracking redesign (April 2026) — status colors funnelled through tokens
+     to avoid hard-coded greens/oranges/reds in dark mode. */
+  --gp-track-status-running: #22c55e;
+  --gp-track-status-running-ring: rgba(34, 197, 94, 0.18);
+  --gp-track-status-running-ring-strong: rgba(34, 197, 94, 0.55);
+  --gp-track-status-idle: #d97706;
+  --gp-track-status-idle-ring: rgba(217, 119, 6, 0.15);
+  --gp-track-status-disabled: #9ca3af;
+  --gp-track-status-failed: #dc2626;
+  --gp-track-status-failed-ring: rgba(220, 38, 38, 0.15);
+  --gp-track-warn-bg: #fffaf0;
+  --gp-track-warn-border: #fde68a;
+  --gp-track-warn-ink: #78350f;
+  --gp-track-warn-ink-strong: #451a03;
+  --gp-track-hero-glow: #fffaf0;
+  --gp-track-dedupe-new: #22c55e;
+  --gp-track-hit-new-bg: #dcfce7;
+  --gp-track-hit-new-ink: #166534;
+}
+
+[data-theme="dark"] {
+  --gp-bg: #0a0a0a;
+  --gp-surface: #111111;
+  --gp-ink: #ededed;
+  --gp-ink-muted: #a1a1aa;
+  --gp-ink-faint: #71717a;
+  --gp-border: #27272a;
+  --gp-border-strong: #3f3f46;
+  --gp-danger: #f87171;
+  /* Ink flips light, so its on-color flips dark — otherwise primary buttons
+     and ink-bg chips render white-on-white. */
+  --gp-on-ink: #0a0a0a;
+  --gp-accent: #818cf8;
+
+  /* Hover & Active States */
+  --gp-hover-bg: #27272a;
+  --gp-active-bg: #3f3f46;
+
+  /* Badges (Dark Mode Adjustments) */
+  --gp-badge-done-bg: rgba(22, 101, 52, 0.2);
+  --gp-badge-done-border: rgba(34, 197, 94, 0.3);
+  --gp-badge-done-ink: #4ade80;
+  --gp-badge-proc-bg: rgba(30, 58, 138, 0.2);
+  --gp-badge-proc-border: rgba(59, 130, 246, 0.3);
+  --gp-badge-proc-ink: #60a5fa;
+  --gp-badge-err-bg: rgba(127, 29, 29, 0.2);
+  --gp-badge-err-border: rgba(239, 68, 68, 0.3);
+  --gp-badge-err-ink: #f87171;
+  --gp-badge-warn-ink: #fbbf24;
+  --gp-badge-ok-ink: #34d399;
+  /* Slate / amber / info badge tints used by .gp-notice + .gp-tag — dark mode
+     was previously inheriting :root values which read as light cards on a
+     dark surface. Match the rgba+ink pattern of the done/proc/err badges. */
+  --gp-badge-slate-bg: rgba(71, 85, 105, 0.2);
+  --gp-badge-slate-border: rgba(148, 163, 184, 0.22);
+  --gp-badge-slate-ink: #cbd5e1;
+  --gp-badge-slate-light-bg: rgba(51, 65, 85, 0.18);
+  --gp-badge-slate-light-border: rgba(100, 116, 139, 0.22);
+  --gp-badge-slate-light-ink: #94a3b8;
+  --gp-badge-amber-bg: rgba(180, 83, 9, 0.18);
+  --gp-badge-amber-border: rgba(245, 158, 11, 0.32);
+  --gp-badge-amber-ink: #fbbf24;
+  --gp-badge-info-bg: rgba(30, 58, 138, 0.2);
+  --gp-badge-info-border: rgba(59, 130, 246, 0.3);
+  --gp-badge-info-ink: #93c5fd;
+
+  --gp-ink-secondary: #a1a1aa;
+  --gp-surface-raised: #1c1c1e;
+  --gp-opinion-accent: #fbbf24;
+  --gp-success-ink: #4ade80;
+  --gp-success-bg: rgba(22, 101, 52, 0.25);
+  --gp-danger-ink: #f87171;
+  --gp-danger-bg: rgba(127, 29, 29, 0.25);
+
+  /* Inspector overlay (dark) */
+  --gp-overlay-backdrop: rgba(0, 0, 0, 0.35);
+
+  /* Source status chip backgrounds (dark) — gap tokens reuse :root */
+  --gp-source-status-processing: #3a2a1a;
+  --gp-source-status-confirmed: #1e3a1e;
+  --gp-source-status-confirmed-empty: #2a2a2a;
+  --gp-source-status-failed: #3a1e1e;
+  --gp-source-status-discarded: #2a2f33;
+
+  /* S3-S5 status tokens (dark): map to already dark-adjusted badge inks */
+  --gp-interest-status-running: var(--gp-badge-warn-ink);
+  --gp-interest-status-done: var(--gp-badge-ok-ink);
+  --gp-interest-status-error: var(--gp-badge-err-ink);
+  --gp-track-cta-bg-hover: color-mix(in srgb, var(--gp-accent) 85%, white);
+
+  /* Status accent (dark) — bump tint to 20%, swap ink for the lighter shade. */
+  --gp-accent-info-bg: rgba(59, 130, 246, 0.2);
+  --gp-accent-info-border: rgba(96, 165, 250, 0.4);
+  --gp-accent-info-ink: #60a5fa;
+  --gp-accent-success-bg: rgba(34, 197, 94, 0.2);
+  --gp-accent-success-ink: #4ade80;
+  --gp-accent-error-bg: rgba(239, 68, 68, 0.2);
+  --gp-accent-error-ink: #f87171;
+  --gp-accent-warn-bg: rgba(245, 158, 11, 0.2);
+  --gp-accent-warn-ink: #fbbf24;
+
+  /* Chat chip palette (dark) — 18% tint, lighter ink. */
+  --gp-chip-query-bg: rgba(37, 99, 235, 0.18);
+  --gp-chip-query-ink: #60a5fa;
+  --gp-chip-submit-bg: rgba(217, 119, 6, 0.18);
+  --gp-chip-submit-ink: #fbbf24;
+  --gp-chip-tracking-bg: rgba(22, 163, 74, 0.18);
+  --gp-chip-tracking-ink: #4ade80;
+  --gp-chip-note-bg: rgba(147, 51, 234, 0.18);
+  --gp-chip-note-ink: #c084fc;
+
+  /* User message bubble (dark) — inverts vs light. */
+  --gp-user-msg-bg: #ededed;
+  --gp-user-msg-ink: #0a0a0a;
+
+  /* Tracking redesign (dark) */
+  --gp-track-status-running: #4ade80;
+  --gp-track-status-running-ring: rgba(74, 222, 128, 0.22);
+  --gp-track-status-running-ring-strong: rgba(74, 222, 128, 0.5);
+  --gp-track-status-idle: #fbbf24;
+  --gp-track-status-idle-ring: rgba(251, 191, 36, 0.18);
+  --gp-track-status-disabled: #6b7280;
+  --gp-track-status-failed: #f87171;
+  --gp-track-status-failed-ring: rgba(248, 113, 113, 0.22);
+  --gp-track-warn-bg: rgba(146, 64, 14, 0.15);
+  --gp-track-warn-border: rgba(253, 230, 138, 0.32);
+  --gp-track-warn-ink: #fcd34d;
+  --gp-track-warn-ink-strong: #fde68a;
+  --gp-track-hero-glow: rgba(230, 168, 23, 0.08);
+  --gp-track-dedupe-new: #4ade80;
+  --gp-track-hit-new-bg: rgba(34, 197, 94, 0.18);
+  --gp-track-hit-new-ink: #4ade80;
+}
